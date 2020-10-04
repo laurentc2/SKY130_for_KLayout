@@ -26,6 +26,17 @@
 #
 ##########################################################################################
 
+# optionnal for a batch launch :   klayout -b -rd input=my_layout.gds -rd report=SKY130_DRC.txt -r drc_sky130.drc
+if $input
+  source($input)
+end
+
+if $report
+  report($report)
+else
+  report("SKY130 DRC runset", File.join(File.dirname(RBA::CellView::active.filename), "SKY130_DRC.txt"))
+end
+
 AL = true  # do not change
 CU = false  # do not change
 # choose betwen only one of  AL  or  CU  Back-end flow here :
@@ -35,10 +46,6 @@ backend_flow = AL
 FEOL    = true # Front-end-of-line checks
 BEOL    = true # Back-end-of-line checks
 OFFGRID = true # Manufacturing grid/angle checks
-
-# report
-########################
-report("SKY130 DRC runset", File.join(File.dirname(RBA::CellView::active.filename), "SKY130_DRC.txt"))
 
 # KLAYOUT setup
 ########################
