@@ -1,0 +1,812 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description/>
+ <version/>
+ <category>drc</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <shortcut/>
+ <show-in-menu>true</show-in-menu>
+ <group-name>drc_scripts</group-name>
+ <menu-path>tools_menu.drc.end</menu-path>
+ <interpreter>dsl</interpreter>
+ <dsl-interpreter-name>drc-dsl-xml</dsl-interpreter-name>
+ <text>#
+#  DRC  for  SKY130 according to : 
+#   https://skywater-pdk.readthedocs.io/en/latest/rules/periphery.html
+#   https://skywater-pdk.readthedocs.io/en/latest/rules/layers.html
+# 
+#   Distributed under GNU GPLv3: https://www.gnu.org/licenses/
+#
+#  History :
+#   2020-10-04 : v1.0 : initial release
+#
+##########################################################################################
+
+AL = true  # do not change
+CU = false  # do not change
+# choose betwen only one of  AL  or  CU  Back-end flow here :
+backend_flow = AL
+
+# Enable / disable rule groups
+FEOL    = true # Front-end-of-line checks
+BEOL    = true # Back-end-of-line checks
+OFFGRID = true # Manufacturing grid/angle checks
+
+# report
+########################
+report("SKY130 DRC runset", File.join(File.dirname(RBA::CellView::active.filename), "SKY130_DRC.txt"))
+
+# KLAYOUT setup
+########################
+# Use a tile size of 1mm - not used in deep mode-
+tiles(1000.um)
+# Use a tile border of 10 micron:
+tile_borders(1.um)
+#no_borders
+
+# Hierachical
+deep
+
+# Use 4 CPU cores
+threads(4)
+# If more inof is needed, set true
+verbose(false)
+
+# layers definitions
+########################
+DIFF = input(65, 20)
+TAP = polygons(65, 44)
+NWELL = polygons(64, 20)
+DNWELL = polygons(64, 18)
+PWBM = polygons(19, 44)
+PWDE = polygons(124, 20)
+NATFET = polygons(124, 21)
+HVTR = polygons(18, 20)
+HVTP = polygons(78, 44)
+LDNTM = polygons(11, 44)
+HVI = polygons(75, 20)
+TUNM = polygons(80, 20)
+LVTN = polygons(125, 44)
+POLY = input(66, 20)
+HVNTM = polygons(125, 20)
+NSDM = polygons(93, 44)
+PSDM = polygons(94, 20)
+RPM = polygons(86, 20)
+URPM = polygons(79, 20)
+NPC = polygons(95, 20)
+LICON = polygons(66, 44)
+LI = input(67, 20)
+MCON = polygons(67, 44)
+M1 = input(68, 20)
+VIA = polygons(68, 44)
+M2 = input(69, 20)
+VIA2 = polygons(69, 44)
+M3 = input(70, 20)
+VIA3 = polygons(70, 44)
+M4 = input(71, 20)
+VIA4 = polygons(71, 44)
+M5 = input(72, 20)
+PAD = input(76, 20)
+NSM = polygons(61, 20)
+CAPM = polygons(89, 44)
+CAP2M = polygons(97, 44)
+VHVI = polygons(74, 21)
+UHVI = polygons(74, 22)
+NPN = polygons(82, 20)
+INDUCTOR = polygons(82, 24)
+VPP = polygons(82, 64)
+PNP = polygons(82, 44)
+LVS_PRUNE = polygons(84, 44)
+NCM = polygons(92, 44)
+PADCENTER = polygons(81, 20)
+MF = polygons(76, 44)
+AREAID_SL = polygons(81, 1)
+AREAID_CE = polygons(81, 2)
+AREAID_FE = polygons(81, 3)
+AREAID_SC = polygons(81, 4)
+AREAID_SF = polygons(81, 6)
+AREAID_SW = polygons(81, 7)
+AREAID_SR = polygons(81, 8)
+AREAID_MT = polygons(81, 10)
+AREAID_DT = polygons(81, 11)
+AREAID_FT = polygons(81, 12)
+AREAID_WW = polygons(81, 13)
+AREAID_LD = polygons(81, 14)
+AREAID_NS = polygons(81, 15)
+AREAID_IJ = polygons(81, 17)
+AREAID_ZR = polygons(81, 18)
+AREAID_ED = polygons(81, 19)
+AREAID_DE = polygons(81, 23)
+AREAID_RD = polygons(81, 24)
+AREAID_DN = polygons(81, 50)
+AREAID_CR = polygons(81, 51)
+AREAID_CD = polygons(81, 52)
+AREAID_ST = polygons(81, 53)
+AREAID_OP = polygons(81, 54)
+AREAID_EN = polygons(81, 57)
+AREAID_EN20 = polygons(81, 58)
+AREAID_LE = polygons(81, 60)
+AREAID_HL = polygons(81, 63)
+AREAID_SD = polygons(81, 70)
+AREAID_PO = polygons(81, 81)
+AREAID_IT = polygons(81, 84)
+AREAID_ET = polygons(81, 101)
+AREAID_LVT = polygons(81, 108)
+AREAID_RE = polygons(81, 125)
+AREAID_AG = polygons(81, 79)
+POLY_RS = polygons(66.13)
+DIFF_RS = polygons(65.13)
+PWELL_RS = polygons(64.13)
+LI_RS = polygons(67.13)
+CFOM = polygons(22, 20)
+
+
+# DRC section
+########################
+info("DRC section")
+
+# Define a new custom function that selects polygons by their number of holes:
+# It will return a new layer containing those polygons with min to max holes.
+# max can be nil to omit the upper limit.
+class DRC::DRCLayer
+  def with_holes(min, max)
+    new_data = RBA::Region::new
+    self.data.each do |p|
+      if p.holes &gt;= (min || 0) &amp;&amp; (!max || p.holes &lt;= max)
+        new_data.insert(p)
+      end
+    end
+    DRC::DRCLayer::new(@engine, new_data)
+  end
+end 
+
+if FEOL
+GATE = DIFF &amp; POLY
+
+#   DNWELL
+DNWELL.width(3.0, euclidian).output("dnwell.2", "dnwell.2 : Min. DNWELL width : 3.0um")
+DNWELL.not(UHVI).not(AREAID_PO).isolated(6.3, euclidian).output("dnwell.3", "dnwell.3 : Min. DNWELL spacing : 6.3um")
+DNWELL.and(PNP).output("dnwell.4", "dnwell.4 : DNWELL must not overlap PNP")
+DNWELL.and(PSDM).edges.not(DNWELL.edges).output("dnwell.5", "P+ must not straddle DNWELL")
+# dnwell.6 rue not coded yet
+
+#   NWELL
+NWELL.width(0.84, euclidian).output("nwell.1", "nwell.1 : Min. NWELL width : 0.84um")
+NWELL.isolated(1.27, euclidian).output("nwell.2a", "nwell.2a : Min. NWELL spacing (merged if less) : 1.27um")
+# rule nwell.4 is suitable for digital cells
+#NWELL.not(UHVI).not(AREAID_EN20).not_interacting(TAP.and(LICON).and(LI)).output("nwell.4", "nwell4 : All NWELL exempt inside UHVI must contain a N+TAP")
+NWELL.enclosing(DNWELL.not(UHVI).not(AREAID_PO), 0.4, euclidian).output("nwell.5", "nwell.5 : Min. NWELL enclosing DNWELL exempt unside UHVI : 0.4um")
+DNWELL.enclosing(NWELL.not(UHVI), 1.03, euclidian).output("nwell.6", "nwell.6 : Min. DNWELL enclosing NWELL exempt unside UHVI : 1.03um")
+DNWELL.separation(NWELL, 4.5, euclidian).output("nwell.7", "nwell.7 : Min. DNWELL separation NWELL : 4.5um")
+
+#   PWBM
+PWBM.not(UHVI).output("pwbm", "PWBM must be inside UHVI")
+DNWELL.and(UHVI).edges.not(PWBM).output("pwbm.4", "pwbm.4 : DNWELL inside UHVI must be enclosed by PWBM")
+
+#   PWDE
+PWDE.not(PWBM).output("pwdem.3", "pwdem.3 : PWDE must be inside PWBM")
+PWDE.not(UHVI).output("pwdem.4", "pwdem.4 : PWDE must be inside UHVI")
+PWDE.not(DNWELL).output("pwdem.5", "pwdem.5 : PWDE must be inside DNWELL")
+
+#   HVTP
+#HVTP.not(NWELL).output("hvtp", "HVTP must inside NWELL")
+HVTP.width(0.38, euclidian).output("hvtp.1", "hvtp.1 : Min. HVTP width : 0.38um")
+HVTP.isolated(0.38, euclidian).output("hvtp.2", "hvtp.2 : Min. HVTP spacing : 0.38um")
+HVTP.enclosing(DIFF, 0.18, euclidian).output("hvtp.3", "hvtp.3 : Min. HVTP enclosure of PFET : 0.18um")
+HVTP.separation(DIFF, 0.18, euclidian).output("hvtp.4", "hvtp.4 : Min. HVTP spacing PFET : 0.18um")
+HVTP.with_area(0..0.265).output("hvtp.5", "hvtp.5 : Min. HVTP area : 0.265um²")
+
+#   HVTR
+HVTR.width(0.38, euclidian).output("hvtr.1", "hvtr.1 : Min. HVTR width : 0.38um")
+HVTR.isolated(0.38, euclidian).output("hvtr.2", "hvtr.2 : Min. HVTR spacing : 0.38um")
+
+#   LVTN
+LVTN.width(0.38, euclidian).output("lvtn.1", "lvtn.1 : Min. LVTN width : 0.38um")
+LVTN.isolated(0.38, euclidian).output("lvtn.2", "lvtn.2 : Min. LVTN spacing : 0.38um")
+LVTN.separation(DIFF.and(POLY).not(UHVI), 0.18, euclidian).output("lvtn.3a", "lvtn.3a : Min. LVTN spacing to Gate : 0.18um")
+LVTN.separation(DIFF.and(NWELL).not(POLY), 0.235, projection).output("lvtn.3b", "lvtn.3b : Min. LVTN spacing to PFET S/D : 0.18um")
+LVTN.enclosing(GATE.not(UHVI), 0.18, euclidian).output("lvtn.4b", "lvtn.4b : Min. LVTN enclosing to Gate : 0.18um")
+LVTN.separation(HVTP, 0.38, euclidian).output("lvtn.9", "lvtn.9 : Min. LVTN spacing HVTP : 0.38um")
+NWELL.not_interacting(GATE.and(NWELL.not(HVI).not(AREAID_CE))).enclosing(LVTN.not(UHVI), 0.18, euclidian).polygons.without_area(0).output("lvtn.4b", "lvtn.4b : Min. LVTN enclosure of Gate : 0.18um")
+LVTN.separation(NWELL.inside(AREAID_CE), 0.38, euclidian).output("lvtn.12", "lvtn.12 : Min. LVTN spacing NWELL inside areaid.ce : 0.38um")
+LVTN.with_area(0..0.265).output("lvtn.13", "lvtn.13 : Min. LVTN area : 0.265um²")
+
+#   NCM
+NCM.and(TAP.and(NWELL).or(DIFF.not(NWELL))).output("ncm.X.3", "ncm.X.3 : NCM must not overlap N+diff")
+NCM.width(0.38, euclidian).output("ncm.1", "ncm.1 : Min. NCM width : 0.38um")
+NCM.isolated(0.38, euclidian).output("ncm.2", "ncm.2 : Min. NCM spacing manual merge if smaller : 0.38um")
+NCM.enclosing(DIFF.and(NWELL), 0.18, euclidian).output("ncm.3", "ncm.3 : Min. NCM enclosure of P+diff : 0.18um")
+NCM.separation(LVTN.and(DIFF), 0.23, euclidian).output("ncm.5", "ncm.5 : Min. NCM spacing LVTN diff : 0.23um")
+NCM.separation(DIFF.not(NWELL), 0.2, euclidian).output("ncm.6", "ncm.6 : Min. NCM spacing NFET : 0.2um")
+NCM.with_area(0..0.265).output("ncm.7", "ncm.13 : Min. NCM area : 0.265um²")
+
+#   DIFF-TAP
+DIFFTAP = DIFF + TAP
+DIFFTAP.width(0.15, euclidian).output("difftap.1", "difftap.1 : Min. DIFFTAP width : 0.15um")
+DIFF.not(AREAID_SC).not(POLY).edges.and(GATE.edges).with_length(0,0.42).output("difftap.2", "difftap.2: Min. Gate (exempt areaid.sc) width : 0.42um")
+DIFF.and(AREAID_SC).not(POLY).edges.and(GATE.edges).with_length(0,0.36).output("difftap.2", "difftap.2: Min. Gate inside areaid.sc width : 0.36um")
+DIFFTAP.isolated(0.27, euclidian).output("difftap.3", "difftap.3 : Min. DIFFTAP spacing : 0.27um")
+TAP.edges.and(DIFF.edges).with_length(0,0.29).output("difftap.4", "difftap.4 : Min. TAP bound by diffusion : 0.29um")
+TAP.edges.and(DIFF.edges).space(0.4, projection).output("difftap.5", "difftap.5 : Min. TAP bound by 2 diffusions : 0.4um")
+(TAP.edges.and(DIFF.edges)).extended(0.01, 0.01, 0, 0, false).not(TAP.and(DIFF)).and(DIFF.or(TAP)).output("difftap.6", "difftap.6 : DIFF and TAP not allowed to extend beyong their abutting ege")
+TAP.edges.not_interacting(DIFF.edges).separation(DIFF.edges, 0.13, euclidian).output("difftap.7", "difftap.7 : Min. DIFF/TAP spacing to non-coincident DIFF edge : 0.13um")
+DIFF.edges.not_interacting(TAP.edges).separation(TAP.edges, 0.13, euclidian).output("difftap.7", "difftap.7 : Min. DIFF/TAP spacing to non-coincident TAP edge : 0.13um")
+NWELL.enclosing(DIFF.not(UHVI).and(PSDM), 0.18, euclidian).output("difftap.8", "difftap.8 : Min. P+Diff enclosure by NWell : 0.18um")
+DIFF.not(UHVI).and(NSDM).separation(NWELL, 0.34, euclidian).output("difftap.9", "difftap.9 : Min. N+Diff spacing to NWell : 0.34um")
+NWELL.enclosing(TAP.not(UHVI).and(NSDM), 0.18, euclidian).output("difftap.10", "difftap.10 : Min. N+Tap enclosure by NWell : 0.18um")
+TAP.not(UHVI).and(PSDM).separation(NWELL, 0.13, euclidian).output("difftap.11", "difftap.11 : Min. P+Tap spacing to NWell : 0.13um")
+
+#   TUNM
+TUNM.width(0.41, euclidian).output("tunm.1", "tunm.1 : Min. TUNM width : 0.41um")
+TUNM.isolated(0.5, euclidian).output("tunm.2", "tunm.2 : Min. TUNM spacing : 0.5um")
+TUNM.enclosing(GATE, 0.095, euclidian).output("tunm.3", "tunm.3 : Min. TUNM beyond gate : 0.095um")
+TUNM.separation(GATE.not_interacting(TUNM), 0.095, euclidian).output("tunm.4", "tunm.4 : Min. TUNM spacing to Gate outside TUNM: 0.095um")
+GATE.and(TUNM).edges.not(TUNM.edges).output("tunm.5", "tunm.5 : Gate must not straddle TUNM")
+TUNM.not(DNWELL).output("tunm.6a", "tunm.6a : TUNM not allowed outside DNWELL")
+TUNM.with_area(0..0.672).output("tunm.7", "tunm.7 : Min. TUNM area : 0.672um²")
+
+#   POLY
+POLY.width(0.15, euclidian).output("poly.1a", "poly.1a : Min. POLY width : 0.15um")
+POLY.not(DIFF).edges.and(GATE.and(LVTN).edges).space(0.35, euclidian).output("poly.1b", "poly.1b: Min. LVTN Gate width : 0.35um")
+POLY.isolated(0.21, euclidian).output("poly.2", "poly.2 : Min. POLY spacing : 0.21um")
+POLY.and(RPM.or(URPM).or(POLY_RS)).width(0.33, euclidian).output("poly.3", "poly.3 : Min. POLY resistor width : 0.33um")
+POLY.not(GATE).separation(DIFF, 0.075, projection).polygons.without_area(0).output("poly.4", "poly.4 : Min. POLY on field spacing to DIFF : 0.075um")
+POLY.not(GATE).separation(TAP, 0.055, euclidian).output("poly.5", "poly.5 : Min. POLY on field spacing to TAP : 0.055um")
+GATE.separation(TAP, 0.3, projection).output("poly.6", "poly.6 : Min. Gate spacing to TAP : 0.3um")
+DIFF.enclosing(GATE, 0.25, projection).polygons.without_area(0).output("poly.7", "poly.7 : Min. Source/Drain length : 0.25um")
+POLY.enclosing(GATE, 0.13, projection).polygons.without_area(0).output("poly.8", "poly.8 : Min. Poly extention Gate (endcap) : 0.13um")
+POLY.and(RPM.or(URPM).or(POLY_RS)).separation(POLY.or(DIFFTAP), 0.48, euclidian).polygons.without_area(0).output("poly.9", "poly.9 : Min. POLY resistor space to Poly or DIFF/TAP : 0.48um")
+DIFF.merged.edges.end_segments(0.01).and(POLY).output("poly.10", "poly.10 : POLY must not overlap Diff corner")
+GATE.with_angle(0 .. 90).output("poly.11", "poly.11 : Non 90 degree angle GATE")
+POLY.not(HVI).not(NWELL.not(HVI)).and(TAP).output("poly.12", "poly.12 : POLY must not overlap TAP")
+POLY.and(DIFF_RS).output("poly.15", "poly.15 : POLY must not overlap DIFF resistor")
+
+#   RPM
+RPM.width(1.27, euclidian).output("rpm.1a", "rpm.1a : Min. RPM width : 1.27um")
+RPM.isolated(0.84, euclidian).output("rpm.2", "rpm.2 : Min. RPM spacing : 0.84um")
+RPM.enclosing(POLY.and(POLY_RS).and(PSDM), 0.2, euclidian).output("rpm.3", "rpm.3 : Min. RPM enclosure of POLY resistor : 0.2um")
+PSDM.enclosing(POLY.and(POLY_RS).and(RPM), 0.11, euclidian).output("rpm.4", "rpm.4 : Min. PSDM enclosure of POLY resistor : 0.11um")
+NPC.enclosing(POLY.and(POLY_RS).and(RPM), 0.095, euclidian).output("rpm.5", "rpm.5 : Min. NPC enclosure of POLY resistor : 0.095um")
+RPM.separation(NSDM, 0.2, euclidian).output("rpm.6", "rpm.6 : Min. RPM spacing NSDM: 0.2um")
+RPM.separation(POLY, 0.2, euclidian).output("rpm.7", "rpm.7 : Min. RPM spacing POLY: 0.2um")
+RPM.and(POLY).edges.not(RPM.edges).output("rpm.8", "rpm.8 : POLY must not straddle RPM")
+POLY.and(POLY_RS).and(RPM).separation(HVNTM, 0.185, euclidian).output("rpm.9", "rpm.9 : Min. POLY resistor spacing HVNTM: 0.185um")
+RPM.and(PWBM).output("rpm.10", "rpm.107 : Min. RPM spacing PWBM: NA")
+
+#   VARAC
+VARAC = POLY &amp; TAP &amp; (NWELL - HVI) - AREAID_CE
+TAP.not(POLY).edges.and(VARAC.edges).space(0.18, euclidian).output("varac.1", "varac.1: Min. Varac channel length : 0.18um")
+TAP.and(POLY).edges.and(VARAC.edges).space(1.0, euclidian).output("varac.2", "varac.2: Min. Varac channel wdth : 1.0um")
+VARAC.separation(HVTP, 0.18, euclidian).output("varac.3", "varac.3: Min. Varac channel space to HVTP : 0.18um")
+VARAC.separation(LICON.and(TAP), 0.25, euclidian).output("varac.4", "varac.4: Min. Varac channel space to LICON on TAP : 0.25um")
+NWELL.enclosing(POLY.overlapping(VARAC), 0.15, euclidian).output("varac.5", "varac.5: Min. NWELL enclosure of POLY overlapping Varac channel : 0.15um")
+TAP.overlapping(VARAC).separation(DIFFTAP, 0.27, euclidian).polygons.without_area(0).output("varac.6", "varac.6: Min. Varac channel TAP space to DIFFTAP : 0.27um")
+NWELL.overlapping(VARAC).and(DIFF.and(NWELL)).output("varac.7", "varac.7:  NWELL overlapping Varac channel must not overlap P+Diff")
+
+#   PHOTO
+PHOTODIODE = DNWELL &amp; AREAID_PO
+PHOTODIODE.edges.without_length(3.0).output("photo.2", "photo.2 : Minimum/Maximum width of PhotoDiode : 3.0um")
+PHOTODIODE.isolated(5.0, euclidian).output("photo.3", "photo.3 : Mini. PhotoDiode spacing : 5.0um")
+PHOTODIODE.separation(DNWELL, 5.3, euclidian).output("photo.4", "photo.4 : Mini. PhotoDiode spacing to DNWELL : 5.3um")
+AREAID_PO.not(DNWELL).output("photo.5.6", "photo.5.6 : PhotoDiode edges must coincide AreaId.po and enclosed by DNWELL")
+PHOTODIODE.not(TAP.not(NWELL).holes).output("photo.7", "photo.7 : PhotoDiode must be enclosed by P+Tap ring")
+PHOTODIODE.and(NWELL).edges.without_length(0.84).output("photo.8", "photo.8 : Minimum/Maximum width of NWell inside PhotoDiode : 0.84um")
+AREAID_PO.edges.and(PHOTODIODE.and(NWELL).size(1.08)).without_length(12.0).output("photo.9", "photo.9 : Minimum/Maximum enclosure of NWell by PhotoDiode : 1.08um")
+PHOTODIODE.and(TAP).edges.without_length(0.41).output("photo.10", "photo.10 : Minimum/Maximum width of Tap inside PhotoDiode : 0.41um")
+
+#   NPC
+NPC.width(0.27, euclidian).output("npc.1", "npc.1 : Min. NPC width : 0.27um")
+NPC.isolated(0.27, euclidian).output("npc.2", "npc.2 : Min. NPC spacing, should be mnually merge if less : 0.27um")
+NPC.separation(GATE, 0.09, euclidian).output("npc.4", "npc.4 : Min. NPC spacing to Gate : 0.09um")
+
+#   NSDM/PSDM
+NPSDM = NSDM + PSDM
+NPSDM.width(0.38, euclidian).output("n/psdm.1", "n/psdm.1 : Min. N/PSDM width : 0.38um")
+NSDM.isolated(0.38, euclidian).output("n/psdm.1", "n/psdm.1 : Min. NSDM spacing, should be mnually merge if less : 0.38um")
+PSDM.isolated(0.38, euclidian).output("n/psdm.1", "n/psdm.1 : Min. PSDM spacing, should be mnually merge if less : 0.38um")
+NPSDM.enclosing(DIFF, 0.125, euclidian).polygons.not(TAP.sized(0.125)).output("n/psdm.5a", "n/psdm.5a : Min. N/PSDM enclosure DIFF except butting edge : 0.125um")
+NPSDM.enclosing(TAP, 0.125, euclidian).polygons.not(DIFF.sized(0.125)).output("n/psdm.5b", "n/psdm.5b : Min. N/PSDM enclosure TAP except butting edge : 0.125um")
+TAP.edges.and(DIFF.edges).not(NPSDM).output("n/psdm.6", "n/psdm.6 : Min. N/PSDM enclosure of butting edge : 0.0um")
+NSDM.and(DIFFTAP).separation(PSDM.and(DIFFTAP), 0.13, euclidian).polygons.without_area(0).output("n/psdm.7", "n/psdm.7 : Min. NSDM diff spacing to PSDM diff except butting edge : 0.13um")
+DIFF.and((NSDM.and(NWELL)).or(PSDM.not(NWELL))).output("n/psdm.8", "n/psdm.8 : DIFF should be the opposite type of well/substrate underneath")
+TAP.and((NSDM.not(NWELL)).or(PSDM.and(NWELL))).output("n/psdm.8", "n/psdm.8 : TAP should be the same type of well/substrate underneath")
+TAP.and(DIFF).without_area(0).output("TAP and DIFF", "TAP and DIFF must not overlap")
+NSDM.with_area(0..0.265).output("n/psdm.10a", "n/psdm.10a : Min. NSDM area : 0.265um²")
+PSDM.with_area(0..0.265).output("n/psdm.10b", "n/psdm.10b : Min. PSDM area : 0.265um²")
+
+#   LICON
+LICON.not(POLY_RS).edges.without_length(0.17).output("licon.1", "licon.1 : Minimum/Maximum width of licon : 0.17um")
+LICON.and(POLY_RS).not_interacting((LICON.and(POLY_RS).edges.with_length(0.19)).or(LICON.and(POLY_RS).edges.with_length(2.0))).output("licon.1b/c", "licon.1b/c : Minimum/Maximum width/length of licon inside POLY resistor : 2.0/0.19um")
+LICON.isolated(0.17, euclidian).output("licon.2", "licon.2 : Min. LICON spacing : 0.17um")
+LICON.and(POLY_RS).edges.with_length(0.19).space(0.35, euclidian).output("licon.2b", "licon.2b : Min. LICON 0.19um edge on resistor spacing : 0.35um")
+LICON.interacting(LICON.and(POLY_RS).edges.with_length(2.0)).separation(LICON.and(POLY_RS), 0.51, euclidian).output("licon.2c", "licon.2c : Min. LICON 2.0um edge on resistor spacing : 0.51um")
+LICON.and(POLY_RS).separation(LICON.not(POLY_RS), 0.51, euclidian).output("licon.2d", "licon.2d : Min. LICON on resistor spacing other LICON : 0.51um")
+# rule licon.3 not coded
+LICON.not(LI).not(POLY.or(DIFF).or(TAP)).output("licon.4", "licon.4 : Min. LICON must overlap LI and (POLY or TAP or DIfF) ")
+DIFF.enclosing(LICON, 0.04, euclidian).output("licon.5", "licon.5 : Min. DIFF enclosure of LICON : 0.04um")
+TAP.edges.and(DIFF.edges).separation(LICON.and(TAP).edges, 0.06, euclidian).output("licon.6", "licon.6 : Min. abutting edge spacing to LICON Tap : 0.06um")
+LICON_edges_with_less_enclosure_Tap = TAP.enclosing(LICON, 0.12, projection).second_edges
+opposite1 = (LICON.edges - LICON_edges_with_less_enclosure_Tap).width(0.17 + 1.dbu, projection).polygons
+LICON.not_interacting(opposite1).output("licon.7", "licon.7 : Min. TAP enclosure of LICON by one of 2 opposite edges : 0.12um")
+POLY.enclosing(LICON, 0.05, euclidian).output("licon.8", "licon.8 : Min. POLY enclosure of LICON : 0.05um")
+LICON_edges_with_less_enclosure_Poly = POLY.enclosing(LICON, 0.08, projection).second_edges
+opposite2 = (LICON.edges - LICON_edges_with_less_enclosure_Poly).width(0.17 + 1.dbu, projection).polygons
+LICON.not_interacting(opposite2).output("licon.8a", "licon.8a : Min. POLY enclosure of LICON by one of 2 opposite edges : 0.08um")
+# rule licon.9 not coded
+LICON.and(TAP.and(NWELL.not(HVI))).separation(VARAC, 0.25, euclidian).output("licon.10", "licon.10 : Min. LICON spacing to Varac channel : 0.25um")
+LICON.and(DIFF.or(TAP)).separation(GATE.not(AREAID_SC), 0.055, euclidian).output("licon.11", "licon.11 : Min. LICON spacing to Gate : 0.055um")
+LICON.and(DIFF.or(TAP)).separation(GATE.and(AREAID_SC), 0.05, euclidian).output("licon.11a", "licon.11a : Min. LICON spacing to Gate inside areaid.sc : 0.05um")
+# rules 11.b , 11.c, 11.d not coded
+DIFF.interacting(GATE).not(DIFF.interacting(GATE).width(5.7, euclidian).polygons).output("licon.12", "licon.12 : Max. SD width without LICON : 5.7um")
+LICON.and(DIFF.or(TAP)).separation(NPC, 0.09, euclidian).output("licon.13", "licon.13 : Min. DIFFTAP LICON spacing to NPC : 0.09um")
+LICON.and(POLY).separation(DIFF.or(TAP), 0.19, euclidian).output("licon.14", "licon.14 : Min. POLY LICON spacing to DIFFTAP : 0.19um")
+NPC.enclosing(LICON.and(POLY), 0.1, euclidian).output("licon.15", "licon.15 : Min. NPC enclosure of Poly-LICON : 0.1um")
+# rule licon.16 not applicable for the DIFF for the NMOS of a NAND gates or the PMOS of a NOR gates
+#DIFF.not(GATE).not_interacting(LICON).output("licon.16", "licon.16 : DIFF must enclose one LICON")
+TAP.not(UHVI).not_interacting(LICON).output("licon.16", "licon.16 : TAP must enclose one LICON")
+POLY.and(TAP).edges.not(TAP.edges).output("licon.17", "licon.17 : TAP must not straddle POLY")
+NPC.not_interacting(LICON.and(POLY)).output("licon.18", "licon.18 : NPC mut enclosed one Poly-LICON")
+
+#   LI
+LI.width(0.17, euclidian).output("li.1", "li.1 : Min. LI width : 0.17um")
+# rule li.2 not coded
+LI.isolated(0.17, euclidian).output("li.3", "li.3 : Min. LI spacing : 0.17um")
+LICON_edges_with_less_enclosure_Li = LI.enclosing(LICON, 0.08, projection).second_edges
+opposite3 = (LICON.edges - LICON_edges_with_less_enclosure_Li).width(0.17 + 1.dbu, projection).polygons
+LICON.not_interacting(opposite3).output("li.5", "li.5 : Min. LI enclosure of LICON of 2 opposite edges : 0.08um")
+LI.with_area(0..0.0561).output("li.6", "li.6 : Min. LI area : 0.0561um²")
+
+#   VPP
+VPP.width(1.43, euclidian).output("vpp.1", "vpp.1 : Min. VPP width : 1.43um")
+# rules 1.b, 1.c not coded
+VPP.and(POLY.or(DIFFTAP)).output("vpp.3", "vpp.3 : VPP must not overlapp POLY or DIFF or TAP")
+VPP.and(NWELL.or(DNWELL)).edges.not(VPP.edges).output("vpp.4", "vpp.4 : VPP must not straddle NWELL or DNWELL")
+VPP.and(POLY.or(LI).or(M1).or(M2)).separation(POLY.or(LI).or(M1).or(M2), 1.5, euclidian).polygons.with_area(2.25,nil).output("vpp.5", "vpp.5 : Min. VPP spacing to Poly or Li or M1 or M2 : 1.5um")
+VPP.with_area(0..area(VPP.and(M3))*0.25).output("vpp.5a", "vpp.5a : Max. M3 density in VPP : 0.25")
+VPP.with_area(0..area(VPP.and(M4))*0.3).output("vpp.5b", "vpp.5b : Max. M4 density in VPP : 0.3")
+VPP.with_area(0..area(VPP.and(M5))*0.4).output("vpp.5c", "vpp.5c : Max. M5 density in VPP : 0.4")
+VPP.enclosing(VPP, 1.5, euclidian).output("vpp.8", "vpp.8 : NWell enclosure of VPP : 1.5")
+VPP.separation(NWELL, 1.5, euclidian).polygons.without_area(0).output("vpp.9", "vpp.9 : VPP spacing to NWell : 1.5")
+# rule vpp.10 not coded
+# rule vpp.11 not coded because MOSCAP is not defined properly by any GDS layer
+# rules vpp.12a, 12b, 12c not coded because specific to one cell
+if backend_flow = CU
+  M1.separation(VPP.and(M1), 0.16, euclidian).polygons.without_area(0).output("vpp.13", "vpp.13 : M1 spacing to M1inside VPP : 0.16")
+end
+
+end #FEOL
+
+if BEOL
+
+#   CT
+MCON.edges.without_length(0.17).output("ct.1", "ct.1 : Minimum/Maximum width of mcon : 0.17um")
+MCON.isolated(0.19, euclidian).output("ct.2", "ct.2 : Min. mcon spacing : 0.19um")
+# rule ct.3 not coded
+MCON.not(LI).output("ct.4", "ct.4 : mcon should covered by LI")
+LI.interacting(LI.and(M1).not(MCON).with_holes(1,10)).enclosing(MCON, 0.2, euclidian).output("ct.irdrop.1", "ct.irdrop.1 : Min. LI enclsoure of 1..10 mcon : 0.2um")
+LI.interacting(LI.and(M1).not(MCON).with_holes(11,100)).enclosing(MCON, 0.3, euclidian).output("ct.irdrop.2", "ct.irdrop.2 : Min. LI enclsoure of 11..100 mcon : 0.3um")
+
+#   M1
+Huge_M1 = M1.size(-1.5).size(1.5)
+M1.width(0.14, euclidian).output("m1.1", "m1.1 : Min. M1 width : 0.14um")
+M1.isolated(0.14, euclidian).output("m1.2", "m1.2 : Min. M1 spacing : 0.14um")
+Huge_M1.separation(M1, 0.28, euclidian).output("m1.3ab", "m1.3ab : Min. 3um.M1 spacing M1 : 0.28um")
+M1.enclosing(MCON, 0.03, euclidian).output("m1.4", "m1.4 : Min. M1 enclosure of mcon : 0.03um")
+# rule m1.4a not coded because specific to 6 cells
+M1.with_area(0..0.083).output("m1.6", "m1.6 : Min. M1 area : 0.083um²")
+M1.holes.with_area(0..0.14).output("m1.7", "m1.7 : Min. M1 holes area : 0.14um²")
+if backend_flow = AL
+  MCON_edges_with_less_enclosure_M1 = M1.enclosing(MCON, 0.06, projection).second_edges
+  opposite4 = (MCON.edges - MCON_edges_with_less_enclosure_M1).width(0.17 + 1.dbu, projection).polygons
+  MCON.not_interacting(opposite4).output("m1.5", "m1.5 : Min. M1 enclosure of MCON of 2 opposite edges : 0.06um")
+  # rule m1.pd.1, rule m1.pd.2a, rule m1.pd.2b not coded
+end
+if bakend_flow = CU
+  M1.sized(-2.0).sized(2.0).output("m1.11", "m1.11 : Max. M1 width after slotting : 4.0um")
+  # rule m1.12 not coded because inconsistent with m1.11
+  # rule m1.13, m1.14, m1.14a not coded : see : https://www.klayout.de/forum/discussion/comment/6759
+end
+
+#   VIA
+#rule via.3 not coded
+VIA.not(M1).output("via.4c.5c", "via.4c.5c : M1 must enclose all VIA")
+if backend_flow = AL
+  VIA.not(AREAID_MT).edges.without_length(0.15).output("via.1a", "via.1a : Minimum/Maximum width of VIA : 0.15um")
+  VIA.and(AREAID_MT).not_interacting((VIA.and(AREAID_MT).edges.without_length(0.15)).or(VIA.and(AREAID_MT).edges.without_length(0.23)).or(VIA.and(AREAID_MT).edges.without_length(0.28))).output("via.1b", "via.1b : Minimum/Maximum width of VIA in areaid.mt: 0.15um or 0.23um or 0.28um")
+  VIA.isolated(0.17, euclidian).output("via.2", "via.2 : Min. VIA spacing : 0.17um")
+  M1.enclosing(VIA.not_interacting(VIA.edges.without_length(0.15)), 0.055, euclidian).output("via.4a", "via.4a : Min. M1 enclosure of 0.15um VIA : 0.055um")
+  M1.enclosing(VIA.not_interacting(VIA.edges.without_length(0.23)), 0.03, euclidian).output("via.4b", "via.4b : Min. M1 enclosure of 0.23um VIA : 0.03um")
+  VIA1_edges_with_less_enclosure_M1 = M1.enclosing(VIA.not_interacting(VIA.edges.without_length(0.15)), 0.085, projection).second_edges
+  opposite5 = (VIA.not_interacting(VIA.edges.without_length(0.15)).edges - VIA1_edges_with_less_enclosure_M1).width(0.15 + 1.dbu, projection).polygons
+  VIA.not_interacting(VIA.edges.without_length(0.15)).not_interacting(opposite5).output("via1.5a", "via1.5a : Min. M1 enclosure of 0.15um VIA of 2 opposite edges : 0.085um")
+  VIA2_edges_with_less_enclosure_M1 = M1.enclosing(VIA.not_interacting(VIA.edges.without_length(0.23)), 0.06, projection).second_edges
+  opposite6 = (VIA.not_interacting(VIA.edges.without_length(0.23)).edges - VIA2_edges_with_less_enclosure_M1).width(0.23 + 1.dbu, projection).polygons
+  VIA.not_interacting(VIA.edges.without_length(0.23)).not_interacting(opposite6).output("via1.5b", "via1.5b : Min. M1 enclosure of 0.23um VIA of 2 opposite edges : 0.06um")
+end
+if backend_flow = CU
+  VIA.not(AREAID_MT).edges.without_length(0.18).output("via.11", "via.11 : Minimum/Maximum width of VIA : 0.18um")
+  VIA.isolated(0.13, euclidian).output("via.12", "via.12 : Min. VIA spacing : 0.13um")
+  # rule via.13 not coded because not understandable
+  VIA1_edges_with_less_enclosure_M1 = M1.enclosing(VIA, 0.04, projection).second_edges
+  opposite5 = (VIA.edges - VIA1_edges_with_less_enclosure_M1).width(0.18 + 1.dbu, projection).polygons
+  VIA.not_interacting(opposite5).output("via1.14", "via1.14 : Min. M1 enclosure of 0.04um VIA of 2 opposite edges : 0.04um")
+  # rules via.irdrop.1, via.irdrop.2, via.irdrop.3, via.irdrop.4 not coded because not understandable
+end
+
+#   M2
+Huge_M2 = M2.size(-1.5).size(1.5)
+M2.width(0.14, euclidian).output("m2.1", "m2.1 : Min. M2 width : 0.14um")
+M2.isolated(0.14, euclidian).output("m2.2", "m2.2 : Min. M2 spacing : 0.14um")
+Huge_M2.separation(M2, 0.28, euclidian).output("m2.3ab", "m2.3ab : Min. 3um.M2 spacing M2 : 0.28um")
+# rule m2.3c not coded
+M2.with_area(0..0.0676).output("m2.6", "m2.6 : Min. M2 area : 0.0676um²")
+M2.holes.with_area(0..0.14).output("m2.7", "m2.7 : Min. M2 holes area : 0.14um²")
+VIA.not(M2).output("m2.via", "m2.via : M2 must enclose VIA")
+if backend_flow = AL
+  M2.enclosing(VIA, 0.055, euclidian).output("m2.4", "m2.4 : Min. M2 enclosure of VIA : 0.055um")
+  VIA_edges_with_less_enclosure_M2 = M2.enclosing(VIA, 0.085, projection).second_edges
+  opposite7 = (VIA.edges - VIA_edges_with_less_enclosure_M2).width(0.14 + 1.dbu, projection).polygons
+  VIA.not_interacting(opposite7).output("m2.5", "m2.5 : Min. M2 enclosure of VIA of 2 opposite edges : 0.085um")
+  # rule m2.pd.1, rule m2.pd.2a, rule m2.pd.2b not coded
+end
+if bakend_flow = CU
+  M2.sized(-2.0).sized(2.0).output("m2.11", "m2.11 : Max. M2 width after slotting : 4.0um")
+  # rule m2.12 not coded because inconsistent with m2.11
+  # rule m2.13, m2.14, m2.14a not coded : see : https://www.klayout.de/forum/discussion/comment/6759
+end
+
+#   VIA2
+#rule via233 not coded
+VIA2.not(M2).output("via2", "via2 : M2 must enclose all VIA2")
+if backend_flow = AL
+  VIA2.not(AREAID_MT).edges.without_length(0.2).output("via2.1a", "via2.1a : Minimum/Maximum width of VIA2 : 0.2um")
+  VIA2.and(AREAID_MT).not_interacting((VIA2.and(AREAID_MT).edges.without_length(0.2)).or(VIA2.and(AREAID_MT).edges.without_length(1.2)).or(VIA2.and(AREAID_MT).edges.without_length(1.5))).output("via2.1b", "via2.1b : Minimum/Maximum width of VIA2 in areaid.mt: 0.2um or 1.2um or 1.5um")
+  VIA2.isolated(0.2, euclidian).output("via2.2", "via2.2 : Min. VIA2 spacing : 0.2um")
+  M2.enclosing(VIA2, 0.04, euclidian).output("via2.4", "via2.4 : Min. M2 enclosure of VIA2 : 0.04um")
+  M2.enclosing(VIA2.not_interacting(VIA2.edges.without_length(1.5)), 0.14, euclidian).output("via2.4a", "via2.4a : Min. M2 enclosure of 1.5um VIA2 : 0.14um")
+  VIA2_edges_with_less_enclosure_M2 = M2.enclosing(VIA2, 0.085, projection).second_edges
+  opposite8 = (VIA2.edges - VIA2_edges_with_less_enclosure_M2).width(0.2 + 1.dbu, projection).polygons
+  VIA2.not_interacting(opposite8).output("via2.5", "via2.5 : Min. M2 enclosure of VIA2 of 2 opposite edges : 0.085um")
+end
+if backend_flow = CU
+  VIA2.edges.without_length(0.21).output("via2.11", "via2.11 : Minimum/Maximum width of VIA2 : 0.21um")
+  VIA2.isolated(0.18, euclidian).output("via2.12", "via2.12 : Min. VIA2 spacing : 0.18um")
+  # rule via2.13 not coded because not understandable, or not clear
+  M2.enclosing(VIA2, 0.035, euclidian).output("via2.14", "via2.14 : Min. M2 enclosure of VIA2 : 0.035um")
+  # rules via2.irdrop.1, via2.irdrop.2, via2.irdrop.3, via2.irdrop.4 not coded because not understandable
+end
+
+#   M3
+Huge_M3 = M3.size(-1.5).size(1.5)
+M3.width(0.3, euclidian).output("m3.1", "m3.1 : Min. M3 width : 0.3um")
+M3.isolated(0.3, euclidian).output("m3.2", "m3.2 : Min. M3 spacing : 0.3um")
+Huge_M3.separation(M3, 0.4, euclidian).output("m3.3ab", "m3.3ab : Min. 3um.M3 spacing M3 : 0.4um")
+# rule m3.3c not coded
+M3.with_area(0..0.24).output("m3.6", "m3.6 : Min. M2 area : 0.24um²")
+VIA2.not(M3).output("m3.via2", "m3.via2 : M3 must enclose VIA2")
+if backend_flow = AL
+  M3.enclosing(VIA2, 0.065, euclidian).output("m3.4", "m3.4 : Min. M3 enclosure of VIA2 : 0.065um")
+  VIA2_edges_with_less_enclosure_M3 = M3.enclosing(VIA2, 0.085, projection).second_edges
+  opposite9 = (VIA2.edges - VIA2_edges_with_less_enclosure_M3).width(0.3 + 1.dbu, projection).polygons
+  VIA2.not_interacting(opposite9).output("m3.5", "m3.5 : Min. M3 enclosure of VIA2 of 2 opposite edges : 0.085um")
+  # rule m3.pd.1, rule m3.pd.2a, rule m3.pd.2b not coded
+end
+if bakend_flow = CU
+  M3.holes.with_area(0..0.2).output("m3.7", "m3.7 : Min. M2 holes area : 0.2um²")
+  M3.sized(-2.0).sized(2.0).output("m3.11", "m3.11 : Max. M3 width after slotting : 4.0um")
+  # rule m3.12 not coded because inconsistent with m3.11
+  # rule m3.13, m3.14, m3.14a not coded : see : https://www.klayout.de/forum/discussion/comment/6759
+end
+
+#   VIA3
+#rule via3.3 not coded
+VIA3.not(M3).output("via3", "via3 : M3 must enclose all VIA3")
+if backend_flow = AL
+  VIA3.not(AREAID_MT).edges.without_length(0.2).output("via3.1a", "via3.1a : Minimum/Maximum width of VIA3 : 0.2um")
+  VIA3.and(AREAID_MT).not_interacting((VIA3.and(AREAID_MT).edges.without_length(0.2)).or(VIA3.and(AREAID_MT).edges.without_length(0.8))).output("via3.1a", "via3.1a : Minimum/Maximum width of VIA3 in areaid.mt: 0.2um or 0.8um")
+  VIA3.isolated(0.2, euclidian).output("via3.2", "via3.2 : Min. VIA3 spacing : 0.2um")
+  M3.enclosing(VIA3, 0.06, euclidian).output("via3.4", "via3.4 : Min. M3 enclosure of VIA3 : 0.06um")
+  VIA3_edges_with_less_enclosure_M3 = M3.enclosing(VIA3, 0.09, projection).second_edges
+  opposite10 = (VIA3.edges - VIA3_edges_with_less_enclosure_M3).width(0.2 + 1.dbu, projection).polygons
+  VIA3.not_interacting(opposite10).output("via3.5", "via3.5 : Min. M2 enclosure of VIA3 of 2 opposite edges : 0.09um")
+end
+if backend_flow = CU
+  VIA3.edges.without_length(0.21).output("via3.11", "via3.11 : Minimum/Maximum width of VIA3 : 0.21um")
+  VIA3.isolated(0.18, euclidian).output("via3.12", "via3.12 : Min. VIA3 spacing : 0.18um")
+  M3.enclosing(VIA3, 0.055, euclidian).output("via3.13", "via3.13 : Min. M3 enclosure of VIA3 : 0.055um")
+  # rule via3.14 not coded because not understandable, or not clear
+  # rules via3.irdrop.1, via3.irdrop.2, via3.irdrop.3, via3.irdrop.4 not coded because not understandable
+end
+
+#   NSM
+NSM.width(3.0, euclidian).output("nsm.1", "nsm.1 : Min. NSM width : 3.0um")
+NSM.isolated(4.0, euclidian).output("nsm.2", "nsm.2 : Min. NSM spacing : 4.0um")
+NSM.enclosing(DIFF, 3.0, euclidian).output("nsm.4", "nsm.4 : Min. NSM enclosure of DIFF : 3.0um")
+NSM.enclosing(TAP, 3.0, euclidian).output("nsm.4", "nsm.4 : Min. NSM enclosure of TAP : 3.0um")
+NSM.enclosing(POLY, 3.0, euclidian).output("nsm.4", "nsm.4 : Min. NSM enclosure of POLY : 3.0um")
+NSM.enclosing(LI, 3.0, euclidian).output("nsm.4", "nsm.4 : Min. NSM enclosure of LI : 3.0um")
+NSM.enclosing(M1, 3.0, euclidian).output("nsm.4", "nsm.4 : Min. NSM enclosure of M1 : 3.0um")
+NSM.enclosing(M2, 3.0, euclidian).output("nsm.4", "nsm.4 : Min. NSM enclosure of M2 : 3.0um")
+NSM.enclosing(M3, 3.0, euclidian).output("nsm.4", "nsm.4 : Min. NSM enclosure of M3 : 3.0um")
+NSM.enclosing(M4, 3.0, euclidian).output("nsm.4", "nsm.4 : Min. NSM enclosure of M4 : 3.0um")
+NSM.enclosing(M5, 3.0, euclidian).output("nsm.4", "nsm.4 : Min. NSM enclosure of M5 : 3.0um")
+NSM.enclosing(CFOM, 3.0, euclidian).output("nsm.4", "nsm.4 : Min. NSM enclosure of CFOM : 3.0um")
+if backend_flow = AL
+  NSM.separation(DIFF, 1.0, euclidian).output("nsm.3", "nsm.3 : Min. NSM spacing to DIFF : 1.0um")
+  NSM.separation(TAP, 1.0, euclidian).output("nsm.3", "nsm.3 : Min. NSM spacing to TAP : 1.0um")
+  NSM.separation(POLY, 1.0, euclidian).output("nsm.3", "nsm.3 : Min. NSM spacing to POLY : 1.0um")
+  NSM.separation(LI, 1.0, euclidian).output("nsm.3", "nsm.3 : Min. NSM spacing to LI : 1.0um")
+  NSM.separation(M1, 1.0, euclidian).output("nsm.3", "nsm.3 : Min. NSM spacing to M1 : 1.0um")
+  NSM.separation(M2, 1.0, euclidian).output("nsm.3", "nsm.3 : Min. NSM spacing to M2 : 1.0um")
+  NSM.separation(M3, 1.0, euclidian).output("nsm.3", "nsm.3 : Min. NSM spacing to M3 : 1.0um")
+  NSM.separation(M4, 1.0, euclidian).output("nsm.3", "nsm.3 : Min. NSM spacing to M4 : 1.0um")
+  NSM.separation(M5, 1.0, euclidian).output("nsm.3", "nsm.3 : Min. NSM spacing to M5 : 1.0um")
+  NSM.separation(CFOM, 1.0, euclidian).output("nsm.3", "nsm.3 : Min. NSM spacing to CFOM : 1.0um")
+end  
+
+#   M4
+Huge_M4 = M4.size(-1.5).size(1.5)
+M4.width(0.3, euclidian).output("m4.1", "m4.1 : Min. M4 width : 0.3um")
+M4.isolated(0.3, euclidian).output("m4.2", "m4.2 : Min. M4 spacing : 0.3um")
+M4.with_area(0..0.24).output("m4.4", "m4.4 : Min. M2 area : 0.24um²")
+Huge_M4.separation(M4, 0.4, euclidian).output("m4.5ab", "m4.5ab : Min. 3um.M4 spacing M4 : 0.4um")
+VIA3.not(M4).output("m4.via3", "m4.via3 : M4 must enclose VIA3")
+if backend_flow = AL
+  M4.enclosing(VIA3, 0.065, euclidian).output("m4.3", "m4.3 : Min. M4 enclosure of VIA3 : 0.065um")
+  VIA3_edges_with_less_enclosure_M4 = M4.enclosing(VIA2, 0.085, projection).second_edges
+  opposite9 = (VIA3.edges - VIA3_edges_with_less_enclosure_M4).width(0.3 + 1.dbu, projection).polygons
+  VIA3.not_interacting(opposite9).output("m4.5", "m4.5 : Min. M4 enclosure of VIA3 of 2 opposite edges : 0.085um")
+  # rule m4.pd.1, rule m4.pd.2a, rule m4.pd.2b not coded
+end
+if bakend_flow = CU
+  M4.holes.with_area(0..0.2).output("m4.7", "m4.7 : Min. M2 holes area : 0.2um²")
+  M4.sized(-5.0).sized(5.0).output("m4.11", "m4.11 : Max. M4 width after slotting : 10.0um")
+  # rule m4.12 not coded because inconsistent with m4.11
+  # rule m4.13, m4.14, m4.14a not coded : see : https://www.klayout.de/forum/discussion/comment/6759
+  M4.enclosing(VIA3, 0.06, euclidian).output("m4.15", "m4.15 : Min. M4 enclosure of VIA3 : 0.06um")
+end
+
+#   VIA4
+VIA4.edges.without_length(0.2).output("via4.1a", "via4.1a : Minimum/Maximum width of VIA4 : 0.2um")
+VIA4.isolated(0.2, euclidian).output("via4.2", "via4.2 : Min. VIA4 spacing : 0.2um")
+#rule via4.3 not coded
+M4.enclosing(VIA4, 0.19, euclidian).output("via4.4", "via4.4 : Min. M4 enclosure of VIA4 : 0.19um")
+VIA4.not(M4).output("via4", "via4 : M4 must enclose all VIA4")
+if backend_flow = CU
+  # rules via4.irdrop.1, via4.irdrop.2, via4.irdrop.3, via4.irdrop.4 not coded because not understandable
+end
+
+#   M5
+M5.width(1.6, euclidian).output("m5.1", "m5.1 : Min. M5 width : 1.6um")
+M5.isolated(1.6, euclidian).output("m5.2", "m5.2 : Min. M5 spacing : 1.6um")
+VIA4.not(M5).output("m5.via4", "m5.via4 : M5 must enclose VIA4")
+M5.enclosing(VIA4, 0.31, euclidian).output("m5.3", "m4.3 : Min. M5 enclosure of VIA4 : 0.31um")
+
+#   PAD
+PAD.isolated(1.27, euclidian).output("pad.2", "pad.2 : Min. PAD spacing : 1.27um")
+
+end #BEOL
+
+if FEOL
+
+#   MF
+MF.not_interacting(MF.edges.without_length(0.8)).output("mf.1", "mf.1 : Minimum/Maximum width of fuse : 0.8um")
+MF.not_interacting(MF.edges.without_length(7.2)).output("mf.2", "mf.2 : Minimum/Maximum length of fuse : 7.2um")
+MF.isolated(1.96, euclidian).output("mf.3", "mf.3 : Min. fuse center spacing : 2.76um")
+# fuses need more clarification on fuse_shield, fuse layers ...
+
+#   HVI
+HVI.width(0.6, euclidian).output("hvi.1", "hvi.1 : Min. HVI width : 0.6um")
+HVI.isolated(0.7, euclidian).output("hvi.2", "hvi.2 : Min. HVI spacing, merge if less : 0.7um")
+HVI.and(TUNM).output("hvi.4", "hvi.4 : HVI must not overlapp TUNM")
+HVI.and(NWELL).separation(NWELL, 2.0, euclidian).output("hvnwell.8", "hvnwelli.8 : Min. HVNWEL spacing to NWELL : 2.0")
+AREAID_HL.not(HVI).output("hvnwel.9", "hvnwell.9 : HVI must overlapp HVNWELL")
+HVI.and(NWELL).not(AREAID_HL).output("hvnwell.9", "hvnwell.9 : HVI must overlapp HVNWELL")
+# rule hvnell.10 not coded
+DIFF.not(PSDM.and(DIFF_RS)).and(HVI).width(0.29, euclidian).output("hvdifftap.14", "hvdifftap.14 : Min. DIFF inside HVI width : 0.29um")
+DIFF.and(PSDM.and(DIFF_RS)).and(HVI).width(0.15, euclidian).output("hvdifftap.14a", "hvdifftap.14a : Min. P+Diff resistor inside HVI width : 0.15um")
+DIFF.and(HVI).isolated(0.3, euclidian).output("hvdifftap.15a", "hvdifftap.15a : Min. DIFF inside HVI spacing : 0.3um")
+DIFF.and(HVI).and(NSDM).separation(DIFF.and(HVI).and(PSDM), 0.37, euclidian).polygons.without_area(0).output("hvdifftap.15b", "hvdifftap.15b : Min. N+Diff inside HVI spacing to P+Diff inside HVI except abutting: 0.37um")
+TAP.and(HVI).edges.and(DIFF).without_length(0.7).output("hvdifftap.16", "hvdifftap.16 : Min. TAP inside HVI abuttng DIFF : 0.7um")
+HVI.and(NWELL).enclosing(DIFF, 0.33, euclidian).output("hvdifftap.17", "hvdifftap.17 : Min. HVNWell enclosure of P+Diff : 0.33um")
+HVI.and(NWELL).separation(DIFF, 0.43, euclidian).output("hvdifftap.18", "hvdifftap.18 : Min. HVNWell spacing to N+Diff : 0.43um")
+HVI.and(NWELL).enclosing(TAP, 0.33, euclidian).output("hvdifftap.19", "hvdifftap.19 : Min. HVNWell enclosure of N+Tap : 0.33um")
+HVI.and(NWELL).separation(TAP, 0.43, euclidian).output("hvdifftap.20", "hvdifftap.20 : Min. HVNWell spacing to P+Tap : 0.43um")
+HVI.and(DIFFTAP).edges.not(HVI.edges).output("hvdifftap.21", "hvdifftap.21 : DIFF or TAP must not straddle HVI")
+HVI.enclosing(DIFFTAP, 0.18, euclidian).output("hvdifftap.22", "hvdifftap.22 : Min. HVI enclosure of DIFF or TAP : 0.18um")
+HVI.separation(DIFFTAP, 0.18, euclidian).output("hvdifftap.23", "hvdifftap.23 : Min. HVI spacing to DIFF or TAP : 0.18um")
+HVI.and(DIFF).not(NWELL).separation(NWELL, 0.43, euclidian).output("hvdifftap.24", "hvdifftap.24 : Min. HV N+Diff spacing to NWELL : 0.43um")
+DIFF.and(HVI).not(NWELL).isolated(1.07, euclidian).polygons.and(TAP).output("hvdifftap.25", "hvdifftap.25 : Min. N+Diff inside HVI spacing accros P+Tap  : 1.07um")
+DIFF.not(POLY).edges.and(GATE.and(HVI).edges).space(0.35, euclidian).output("hvpoly.13", "hvpoly.13: Min. HVI Gate length : 0.5um")
+HVI.and(POLY).edges.not(HVI.edges).output("hvpoly.14", "hvpoly.14 : POLY must not straddle HVI")
+
+#   HVNTM
+HVNTM.width(0.7, euclidian).output("hvntm.1", "hvntm.1 : Min. HVNTM width : 0.7um")
+HVNTM.isolated(0.7, euclidian).output("hvntm.2", "hvntm.2 : Min. HVNTM spacing : 0.7um")
+HVNTM.enclosing(DIFF.and(NWELL).and(HVI), 0.185, euclidian).output("hvntm.3", "hvntm.3 : Min. HVNTM enclosure of HV N+Diff : 0.185um")
+HVNTM.separation(DIFF.not(NWELL).not(HVI), 0.185, euclidian).output("hvntm.4", "hvntm.4 : Min. HVNTM spacing to N+Diff : 0.185um")
+HVNTM.separation(DIFF.and(NWELL).not(HVI), 0.185, euclidian).output("hvntm.5", "hvntm.5 : Min. HVNTM spacing to P+Diff : 0.185um")
+HVNTM.separation(TAP.not(NWELL).not(HVI), 0.185, euclidian).polygons.without_area(0).output("hvntm.6a", "hvntm.6a : Min. HVNTM spacing to P+Tap : 0.185um")
+HVNTM.and(AREAID_CE).output("hvntm.9", "hvntm.9 : HVNTM must not overlapp areaid.ce")
+
+#   DENMOS
+POLY.not_interacting(PWDE).interacting(AREAID_EN).width(1.055, projection).output("denmos.1", "denmos.1 : Min. de_nFet gate width : 1.055um")
+DIFF.not_interacting(PWDE).enclosing(POLY.interacting(AREAID_EN), 0.28, projection).polygons.without_area(0).output("denmos.2", "denmos.2 : Min. de_nFet source ouside Poly width : 0.28um")
+DIFF.not_interacting(PWDE).and(POLY.interacting(AREAID_EN)).width(0.925, projection).output("denmos.3", "denmos.3 : Min. de_nFet source inside Poly width : 0.925um")
+DIFF.not_interacting(PWDE).interacting(AREAID_EN).not_interacting(POLY).width(0.17, euclidian).output("denmos.4", "denmos.4 : Min. de_nFet drain width : 0.17um")
+NWELL.not_interacting(PWDE).and(POLY.interacting(AREAID_EN)).width(0.225, projection).polygons.or(NWELL.and(POLY.interacting(AREAID_EN)).size(-0.1125).size(0.1125)).output("denmos.5", "denmos.5 : Min. de_nFet source inside NWell width : 0.225m")
+DIFF.not_interacting(PWDE).interacting(AREAID_EN).not_interacting(POLY).separation(DIFF.interacting(POLY.interacting(AREAID_EN)), 1.585, projection).output("denmos.6", "denmos.6 : Min. de_nFet source spacing to drain : 1.585um")
+NWELL.not_interacting(PWDE).and(POLY.and(DIFF).interacting(AREAID_EN)).edges.without_length(5.0, nil).output("denmos.7", "denmos.7 : Min. de_nFet channel width : 5.0um")
+DIFF.not_interacting(PWDE).interacting(AREAID_EN).not_interacting(POLY).edges.without_angle(45).without_angle(135).without_angle(225).without_angle(315).output("denmos.8", "denmos.8 : 90deg. not allowed for de_nFet drain")
+NWELL.not_interacting(PWDE).interacting(AREAID_EN).edges.without_angle(45).without_angle(135).without_angle(225).without_angle(315).output("denmos.9a", "denmos.9a : 90deg. not allowed for de_nFet NWell")
+NWELL.not_interacting(PWDE).interacting(AREAID_EN).edges.with_angle(45).without_length(0.607..0.609).output("denmos.9a", "denmos.9a : 45deg. bevels of de_nFet NWell should be 0.43um from corners")
+NWELL.not_interacting(PWDE).interacting(AREAID_EN).edges.with_angle(135).without_length(0.607..0.609).output("denmos.9a", "denmos.9a : 45deg. bevels of de_nFet NWell should be 0.43um from corners")
+DIFF.not_interacting(PWDE).interacting(AREAID_EN).not_interacting(POLY).edges.with_angle(45).without_length(0.7..0.71).output("denmos.9b", "denmos.9b : 45deg. bevels of de_nFet drain should be 0.05um from corners")
+DIFF.not_interacting(PWDE).interacting(AREAID_EN).not_interacting(POLY).edges.with_angle(135).without_length(0.7..0.71).output("denmos.9b", "denmos.9b : 45deg. bevels of de_nFet drain should be 0.05um from corners")
+NWELL.not_interacting(PWDE).enclosing(DIFF.interacting(AREAID_EN).not_interacting(POLY), 0.66, euclidian).output("denmos.10", "denmos.10 : Min. NWell enclosure of de_nFet drain : 0.66um")
+NWELL.not_interacting(PWDE).interacting(AREAID_EN).separation(TAP.not(NWELL), 0.86, euclidian).output("denmos.11", "denmos.11 : Min. de_nFet NWell spacing to Tap : 0.86um")
+NWELL.not_interacting(PWDE).interacting(AREAID_EN).isolated(2.4, euclidian).output("denmos.12", "denmos.12 : Min. de_nFet NWell : 2.4um")
+NSDM.not_interacting(PWDE).enclosing(DIFF.interacting(AREAID_EN).interacting(POLY), 0.13, euclidian).output("denmos.13", "denmos.13 : Min. NSDM enclosure of de_nFet source : 0.13um")
+
+#   PEDMOS
+POLY.interacting(PWDE).interacting(AREAID_EN).width(1.05, projection).output("depmos.1", "depmos.1 : Min. de_pFet gate width : 1.05um")
+DIFF.interacting(PWDE).enclosing(POLY.interacting(AREAID_EN), 0.28, projection).polygons.without_area(0).output("depmos.2", "depmos.2 : Min. de_pFet source ouside Poly width : 0.28um")
+DIFF.interacting(PWDE).and(POLY.interacting(AREAID_EN)).width(0.92, projection).output("depmos.3", "depmos.3 : Min. de_pFet source inside Poly width : 0.92um")
+DIFF.interacting(PWDE).interacting(AREAID_EN).not_interacting(POLY).width(0.17, euclidian).output("depmos.4", "depmos.4 : Min. de_pFet drain width : 0.17um")
+PWDE.not(NWELL).and(POLY.interacting(AREAID_EN)).width(0.26, projection).polygons.or(PWDE.not(NWELL).and(POLY.interacting(AREAID_EN)).size(-0.13).size(0.13)).output("depmos.5", "depmos.5 : Min. de_pFet source inside NWell width : 0.26m")
+DIFF.interacting(PWDE).interacting(AREAID_EN).not_interacting(POLY).separation(DIFF.interacting(POLY.interacting(AREAID_EN)), 1.19, projection).output("depmos.6", "depmos.6 : Min. de_pFet source spacing to drain : 1.19um")
+NWELL.interacting(PWDE).and(POLY.and(DIFF).interacting(AREAID_EN)).edges.without_length(5.0, nil).output("depmos.7", "depmos.7 : Min. de_pFet channel width : 5.0um")
+DIFF.interacting(PWDE).interacting(AREAID_EN).not_interacting(POLY).edges.without_angle(45).without_angle(135).without_angle(225).without_angle(315).output("depmos.8", "depmos.8 : 90deg. not allowed for de_pFet drain")
+PWDE.not(NWELL).interacting(AREAID_EN).edges.without_angle(45).without_angle(135).without_angle(225).without_angle(315).output("depmos.9a", "depmos.9a : 90deg. not allowed for de_pFet PWell")
+PWDE.not(NWELL).interacting(AREAID_EN).edges.with_angle(45).without_length(0.607..0.609).output("depmos.9a", "depmos.9a : 45deg. bevels of de_pFet PWell should be 0.43um from corners")
+PWDE.not(NWELL).interacting(AREAID_EN).edges.with_angle(135).without_length(0.607..0.609).output("depmos.9a", "depmos.9a : 45deg. bevels of de_pFet PWell should be 0.43um from corners")
+DIFF.interacting(PWDE).interacting(AREAID_EN).not_interacting(POLY).edges.with_angle(45).without_length(0.7..0.71).output("depmos.9b", "depmos.9b : 45deg. bevels of de_pFet drain should be 0.05um from corners")
+DIFF.interacting(PWDE).interacting(AREAID_EN).not_interacting(POLY).edges.with_angle(135).without_length(0.7..0.71).output("depmos.9b", "depmos.9b : 45deg. bevels of de_pFet drain should be 0.05um from corners")
+NWELL.interacting(PWDE).separation(DIFF.interacting(AREAID_EN).not_interacting(POLY), 0.86, euclidian).output("depmos.10", "depmos.10 : Min. PWell enclosure of de_pFet drain : 0.86um")
+PWDE.not(NWELL).interacting(AREAID_EN).separation(TAP.and(NWELL), 0.66, euclidian).output("depmos.11", "depmos.11 : Min. de_pFet PWell spacing to Tap : 0.66um")
+PSDM.interacting(PWDE).enclosing(DIFF.interacting(AREAID_EN).interacting(POLY), 0.13, euclidian).output("depmos.12", "depmos.12 : Min. PSDM enclosure of de_pFet source : 0.13um")
+
+#   EXTD
+AREAID_EN.and(DIFFTAP).edges.not(AREAID_EN.edges).output("extd.1", "extd.1 : DIFFTAP must not straddle areaid.en")
+# rule extd.2 not coded
+DIFFTAP.interacting(AREAID_EN).not(POLY).with_area(0).output("extd.2", "extd.2 : POLY must not overlapp entirely DIFFTAP in areaid.en")
+# rules extd.4, extd.5, extd.6, extd.7 not coded because specific to some cells
+
+#   VHVI
+# rules vhvi.vhv.1, vhvi.vhv.2, vhvi.vhv.3, vhvi.vhv.4, vhvi.vhv.5, vhvi.vhv.6 not coded
+VHVI.width(0.02, euclidian).output("vhvi.1", "vhvi.1 : Min. VHVI width : 0.02um")
+VHVI.and(AREAID_CE).output("vhvi.2", "vhvi.2 : VHVI must not overlap areaid.ce")
+VHVI.and(HVI).output("vhvi.3", "vhvi.3 : VHVI must not overlap HVI")
+# rules vhvi.4, vhvi.6 not coded
+VHVI.and(DIFF).edges.not(VHVI.edges).output("vhvi.5", "vhvi.5 : VHVI must not straddle DIFF")
+VHVI.and(TAP).edges.not(VHVI.edges).output("vhvi.5", "vhvi.5 : VHVI must not straddle TAP")
+VHVI.and(POLY).edges.not(VHVI.edges).output("vhvi.7", "vhvi.7 : VHVI must not straddle POLY")
+
+NWELL.and(VHVI).separation(NWELL, 2.5, euclidian).output("hv.nwell.1", "hv.nwell.1 : Min. VHVI NWell spacing to NWell : 2.5um")
+DIFF.and(VHVI).isolated(0.3, euclidian).output("hv.diff.1", "hv.diff.1 : Min. VHVI DIFF spacing : 0.3um")
+NWELL.interacting(DIFF.and(VHVI)).separation(DIFF.not(NWELL), 0.43, euclidian).output("hv.diff.2", "hv.diff.2 : Min. VHVI NWell spacing N+Diff : 0.43um")
+DIFF.and(VHVI).not(NWELL).separation(NWELL, 0.55, euclidian).output("hv.diff.3a", "hv.diff.3a : Min. VHVI N+Diff spacing NWell : 0.55um")
+# rule hv.diff.3b not coded
+POLY.and(VHVI).not(DIFF).separation(DIFF, 0.3, euclidian).polygons.without_area(0).output("hv.poly.2", "hv.poly.2 : Min. VHVI Poly spacing to DIFF : 0.3um")
+POLY.and(VHVI).not(DIFF).separation(NWELL, 0.55, euclidian).polygons.without_area(0).output("hv.poly.3", "hv.poly.3 : Min. VHVI Poly spacing to NWell : 0.55um")
+NWELL.enclosing(POLY.and(VHVI).not(DIFF), 0.3, euclidian).polygons.without_area(0).output("hv.poly.4", "hv.poly.4 : Min. NWell enclosure of VHVI Poly : 0.3um")
+#POLY.and(VHVI).enclosing(DIFF.interacting(AREAID_EN), 0.16, projection).polygons.without_area(0).output("hv.poly.6", "hv.poly.6 : Min. Poly enclosure of hvFET Gate : 0.16um")
+# rule hv.poly.7 not coded
+
+#   UHVI
+UHVI.and(DIFF).edges.not(UHVI.edges).output("uhvi.1", "uhvi.1 : DIFF must not straddle UHVI")
+UHVI.and(TAP).edges.not(UHVI.edges).output("uhvi.1", "uhvi.1 : TAP must not straddle UHVI")
+UHVI.and(POLY).edges.not(UHVI.edges).output("uhvi.2", "uhvi.2 : POLY must not straddle UHVI")
+PWBM.not(UHVI).output("uhvi.3", "uhvi.3 : UHVI must not enclose PWBM")
+UHVI.and(DNWELL).edges.not(UHVI.edges).output("uhvi.4", "uhvi.4 : DNWELL must not straddle UHVI")
+AREAID_EN20.not(UHVI).output("uhvi.5", "uhvi.5 : UHVI must not enclose areaid.en20")
+#DNWELL.not(UHVI).output("uhvi.6", "uhvi.6 : UHVI must not enclose DNWELL")
+NATFET.not(UHVI).output("uhvi.7", "uhvi.7 : UHVI must not enclose natfet")
+
+#   PWELL_RES
+PWELL_RS.width(2.65).output("pwres.2", "pwres.2 : Min. PWell resistor width : 2.65um")
+PWELL_RS.size(-2.65).size(2.65).output("pwres.2", "pwres.2 : Max. PWell resistor width : 2.65um")
+PWELL_RS.interacting(PWELL_RS.edges.with_length(2.651,26.499)).output("pwres.3", "pwres.3 : Min. PWell resistor length : 265um")
+PWELL_RS.interacting(PWELL_RS.edges.with_length(265.0, nil)).output("pwres.4", "pwres.4 : Max. PWell resistor length : 265um")
+TAP.interacting(PWELL_RS).separation(NWELL, 0.22, euclidian).output("pwres.5", "pwres.5 : Min. PWell resistor TAP spacing to NWell : 0.22um")
+TAP.interacting(PWELL_RS).and(TAP.sized(0.22).and(NWELL)).output("pwres.5", "pwres.5 : Max. PWell resistor TAP spacing to NWell : 0.22um")
+TAP.interacting(PWELL_RS).width(0.53).output("pwres.6", "pwres.6 : Min. width of TAP inside PWell resistor : 0.53um")
+TAP.interacting(PWELL_RS).size(-0.265).size(0.265).output("pwres.6", "pwres.6 : Max. width of TAP inside PWell resistor : 0.53um")
+# rules pwres.7a, pwres.7b not coded
+PWELL_RS.and(DIFF).output("pwres.8", "pwres.8 : DIFF not allowed inside PWell resistor")
+PWELL_RS.and(POLY).output("pwres.8", "pwres.8 : POLY not allowed inside PWell resistor")
+# rules pwres.9, pwres.10 not coded
+
+#   RF_DIODE
+AREAID_RE.with_angle(0 .. 90).output("rfdiode.1", "rfdiode.1 : Non 90 degree angle areaid.re")
+AREAID_RE.not(NWELL).or(NWELL.interacting(AREAID_RE).not(AREAID_RE)).output("rfdiode.2", "rfdiode.2 : areaid.re must coincide rf NWell diode")
+# rule rfdiode.3 not coded
+
+end #FEOL
+
+if OFFGRID
+
+DNWELL.ongrid(0.005).output("DNWELL_offgrid", "x.1b : Offgrid vertex on DNWELL")
+DNWELL.with_angle(0 .. 45).output("DNWELL_angle", "x.3a : Non 45 degree angle DNWELL")
+NWELL.ongrid(0.005).output("NWELL_offgrid", "x.1b : Offgrid vertex on NWELL")
+NWELL.with_angle(0 .. 45).output("NWELL_angle", "x.3a : Non 45 degree angle NWELL")
+PWBM.ongrid(0.005).output("PWBM_offgrid", "x.1b : Offgrid vertex on PWBM")
+PWBM.with_angle(0 .. 45).output("PWBM_angle", "x.3a : Non 45 degree angle PWBM")
+PWDE.ongrid(0.005).output("PWDE_offgrid", "x.1b : Offgrid vertex on PWDE")
+PWDE.with_angle(0 .. 45).output("PWDE_angle", "x.3a : Non 45 degree angle PWDE")
+HVTP.ongrid(0.005).output("HVTP_offgrid", "x.1b : Offgrid vertex on HVTP")
+HVTP.with_angle(0 .. 45).output("HVTP_angle", "x.3a : Non 45 degree angle HVTP")
+HVTR.ongrid(0.005).output("HVTR_offgrid", "x.1b : Offgrid vertex on HVTR")
+HVTR.with_angle(0 .. 45).output("HVTR_angle", "x.3a : Non 45 degree angle HVTR")
+LVTN.ongrid(0.005).output("LVTN_offgrid", "x.1b : Offgrid vertex on LVTN")
+LVTN.with_angle(0 .. 45).output("LVTN_angle", "x.3a : Non 45 degree angle LVTN")
+NCM.ongrid(0.005).output("NCM_offgrid", "x.1b : Offgrid vertex on NCM")
+NCM.with_angle(0 .. 45).output("NCM_angle", "x.3a : Non 45 degree angle NCM")
+DIFF.ongrid(0.005).output("DIFF_offgrid", "x.1b : Offgrid vertex on DIFF")
+TAP.ongrid(0.005).output("TAP_offgrid", "x.1b : Offgrid vertex on TAP")
+DIFF.not(AREAID_EN.and(UHVI)).with_angle(0 .. 90).output("DIFF_angle", "x.2 : Non 90 degree angle DIFF")
+DIFF.and(AREAID_EN.and(UHVI)).with_angle(0 .. 45).output("DIFF_angle", "x.2c : Non 45 degree angle DIFF")
+TAP.not(AREAID_EN.and(UHVI)).with_angle(0 .. 90).output("TAP_angle", "x.2 : Non 90 degree angle TAP")
+TAP.and(AREAID_EN.and(UHVI)).with_angle(0 .. 45).output("TAP_angle", "x.2c : Non 45 degree angle TAP")
+TUNM.ongrid(0.005).output("TUNM_offgrid", "x.1b : Offgrid vertex on TUNM")
+TUNM.with_angle(0 .. 45).output("TUNM_angle", "x.3a : Non 45 degree angle TUNM")
+POLY.ongrid(0.005).output("POLY_offgrid", "x.1b : Offgrid vertex on POLY")
+POLY.with_angle(0 .. 90).output("POLY_angle", "x.2 : Non 90 degree angle POLY")
+RPM.ongrid(0.005).output("RPM_offgrid", "x.1b : Offgrid vertex on RPM")
+RPM.with_angle(0 .. 45).output("RPM_angle", "x.3a : Non 45 degree angle RPM")
+NPC.ongrid(0.005).output("NPC_offgrid", "x.1b : Offgrid vertex on NPC")
+NPC.with_angle(0 .. 45).output("NPC_angle", "x.3a : Non 45 degree angle NPC")
+NSDM.ongrid(0.005).output("NSDM_offgrid", "x.1b : Offgrid vertex on NSDM")
+NSDM.with_angle(0 .. 45).output("NSDM_angle", "x.3a : Non 45 degree angle NSDM")
+PSDM.ongrid(0.005).output("PSDM_offgrid", "x.1b : Offgrid vertex on PSDM")
+PSDM.with_angle(0 .. 45).output("PSDM_angle", "x.3a : Non 45 degree angle PSDM")
+LICON.ongrid(0.005).output("LICON_offgrid", "x.1b : Offgrid vertex on LICON")
+LICON.with_angle(0 .. 90).output("LICON_angle", "x.2 : Non 90 degree angle LICON")
+LI.ongrid(0.005).output("LI_offgrid", "x.1b : Offgrid vertex on LI")
+LI.with_angle(0 .. 45).output("LI_angle", "x.3a : Non 45 degree angle LI")
+MCON.ongrid(0.005).output("CT_offgrid", "x.1b : Offgrid vertex on MCON")
+MCON.with_angle(0 .. 90).output("CT_angle", "x.2 : Non 90 degree angle MCON")
+VPP.ongrid(0.005).output("VPP_offgrid", "x.1b : Offgrid vertex on VPP")
+VPP.with_angle(0 .. 45).output("VPP_angle", "x.3a : Non 45 degree angle VPP")
+M1.ongrid(0.005).output("M1_offgrid", "x.1b : Offgrid vertex on M1")
+M1.with_angle(0 .. 45).output("M1_angle", "x.3a : Non 45 degree angle M1")
+VIA.ongrid(0.005).output("VIA_offgrid", "x.1b : Offgrid vertex on VIA")
+VIA.with_angle(0 .. 90).output("VIA_angle", "x.2 : Non 90 degree angle VIA")
+M2.ongrid(0.005).output("M2_offgrid", "x.1b : Offgrid vertex on M2")
+M2.with_angle(0 .. 45).output("M2_angle", "x.3a : Non 45 degree angle M2")
+VIA2.ongrid(0.005).output("VIA2_offgrid", "x.1b : Offgrid vertex on VIA2")
+VIA2.with_angle(0 .. 90).output("VIA2_angle", "x.2 : Non 90 degree angle VIA2")
+M3.ongrid(0.005).output("M3_offgrid", "x.1b : Offgrid vertex on M3")
+M3.with_angle(0 .. 45).output("M3_angle", "x.3a : Non 45 degree angle M3")
+VIA3.ongrid(0.005).output("VIA3_offgrid", "x.1b : Offgrid vertex on VIA3")
+VIA3.with_angle(0 .. 90).output("VIA3_angle", "x.2 : Non 90 degree angle VIA3")
+NSM.ongrid(0.005).output("NSM_offgrid", "x.1b : Offgrid vertex on NSM")
+NSM.with_angle(0 .. 45).output("NSM_angle", "x.3a : Non 45 degree angle NSM")
+M4.ongrid(0.005).output("M4_offgrid", "x.1b : Offgrid vertex on M4")
+M4.with_angle(0 .. 45).output("M4_angle", "x.3a : Non 45 degree angle M4")
+VIA4.ongrid(0.005).output("VIA4_offgrid", "x.1b : Offgrid vertex on VIA4")
+VIA4.with_angle(0 .. 90).output("VIA4_angle", "x.2 : Non 90 degree angle VIA4")
+M5.ongrid(0.005).output("M5_offgrid", "x.1b : Offgrid vertex on M5")
+M5.with_angle(0 .. 45).output("M5_angle", "x.3a : Non 45 degree angle M5")
+PAD.ongrid(0.005).output("PAD_offgrid", "x.1b : Offgrid vertex on PAD")
+PAD.with_angle(0 .. 45).output("PAD_angle", "x.3a : Non 45 degree angle PAD")
+MF.ongrid(0.005).output("MF_offgrid", "x.1b : Offgrid vertex on MF")
+MF.with_angle(0 .. 90).output("MF_angle", "x.2 : Non 90 degree angle MF")
+HVI.ongrid(0.005).output("HVI_offgrid", "x.1b : Offgrid vertex on HVI")
+HVI.with_angle(0 .. 45).output("HVI_angle", "x.3a : Non 45 degree angle HVI")
+HVNTM.ongrid(0.005).output("HVNTM_offgrid", "x.1b : Offgrid vertex on HVNTM")
+HVNTM.with_angle(0 .. 45).output("HVNTM_angle", "x.3a : Non 45 degree angle HVNTM")
+VHVI.ongrid(0.005).output("VHVI_offgrid", "x.1b : Offgrid vertex on VHVI")
+VHVI.with_angle(0 .. 45).output("VHVI_angle", "x.3a : Non 45 degree angle VHVI")
+UHVI.ongrid(0.005).output("UHVI_offgrid", "x.1b : Offgrid vertex on UHVI")
+UHVI.with_angle(0 .. 45).output("UHVI_angle", "x.3a : Non 45 degree angle UHVI")
+PWELL_RS.ongrid(0.005).output("PWELL_RS_offgrid", "x.1b : Offgrid vertex on PWELL_RS")
+PWELL_RS.with_angle(0 .. 45).output("PWELL_RS_angle", "x.3a : Non 45 degree angle PWELL_RS")
+AREAID_RE.ongrid(0.005).output("AREAID_RE_offgrid", "x.1b : Offgrid vertex on areaid.re")
+
+end #OFFGRID</text>
+</klayout-macro>
