@@ -109,11 +109,11 @@
   <connection>met2,69/44,met3</connection>
   <connection>met3,70/44,met4</connection>
   <connection>met4,71/44,met5</connection>
-  <symbols>met1='67/20+67/16'</symbols>
-  <symbols>met1='68/20+68/16'</symbols>
-  <symbols>met2='69/20+69/16'</symbols>
-  <symbols>met3='70/20+70/16'</symbols>
-  <symbols>met4='71/20+71/16'</symbols>
-  <symbols>met5='72/20+72/16'</symbols>
+  <symbols>met1='67/20+67/5'</symbols>
+  <symbols>met1='68/20+68/5'</symbols>
+  <symbols>met2='69/20+69/5'</symbols>
+  <symbols>met3='70/20+70/5'</symbols>
+  <symbols>met4='71/20+71/5'</symbols>
+  <symbols>met5='72/20+72/5'</symbols>
  </connectivity>
 </technology>
