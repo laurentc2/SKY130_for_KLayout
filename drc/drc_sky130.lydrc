@@ -178,7 +178,7 @@ GATE = DIFF &amp; POLY
 DNWELL.width(3.0, euclidian).output("dnwell.2", "dnwell.2 : Min. DNWELL width : 3.0um")
 DNWELL.not(UHVI).not(AREAID_PO).isolated(6.3, euclidian).output("dnwell.3", "dnwell.3 : Min. DNWELL spacing : 6.3um")
 DNWELL.and(PNP).output("dnwell.4", "dnwell.4 : DNWELL must not overlap PNP")
-DNWELL.and(PSDM).edges.not(DNWELL.edges).output("dnwell.5", "P+ must not straddle DNWELL")
+DNWELL.and(PSDM).edges.not(PSDM.edges).output("dnwell.5", "P+ must not straddle DNWELL")
 # dnwell.6 rue not coded yet
 
 #   NWELL
@@ -252,7 +252,7 @@ TUNM.width(0.41, euclidian).output("tunm.1", "tunm.1 : Min. TUNM width : 0.41um"
 TUNM.isolated(0.5, euclidian).output("tunm.2", "tunm.2 : Min. TUNM spacing : 0.5um")
 TUNM.enclosing(GATE, 0.095, euclidian).output("tunm.3", "tunm.3 : Min. TUNM beyond gate : 0.095um")
 TUNM.separation(GATE.not_interacting(TUNM), 0.095, euclidian).output("tunm.4", "tunm.4 : Min. TUNM spacing to Gate outside TUNM: 0.095um")
-GATE.and(TUNM).edges.not(TUNM.edges).output("tunm.5", "tunm.5 : Gate must not straddle TUNM")
+GATE.and(TUNM).edges.not(GATE.edges).output("tunm.5", "tunm.5 : Gate must not straddle TUNM")
 TUNM.not(DNWELL).output("tunm.6a", "tunm.6a : TUNM not allowed outside DNWELL")
 TUNM.with_area(0..0.672).output("tunm.7", "tunm.7 : Min. TUNM area : 0.672um²")
 
@@ -263,7 +263,7 @@ POLY.isolated(0.21, euclidian).output("poly.2", "poly.2 : Min. POLY spacing : 0.
 POLY.and(RPM.or(URPM).or(POLY_RS)).width(0.33, euclidian).output("poly.3", "poly.3 : Min. POLY resistor width : 0.33um")
 POLY.not(GATE).separation(DIFF, 0.075, projection).polygons.without_area(0).output("poly.4", "poly.4 : Min. POLY on field spacing to DIFF : 0.075um")
 POLY.not(GATE).separation(TAP, 0.055, euclidian).output("poly.5", "poly.5 : Min. POLY on field spacing to TAP : 0.055um")
-GATE.separation(TAP, 0.3, projection).output("poly.6", "poly.6 : Min. Gate spacing to TAP : 0.3um")
+GATE.separation(TAP, 0.3, projection).polygons.and(DIFF).output("poly.6", "poly.6 : Min. Gate spacing to TAP : 0.3um")
 DIFF.enclosing(GATE, 0.25, projection).polygons.without_area(0).output("poly.7", "poly.7 : Min. Source/Drain length : 0.25um")
 POLY.enclosing(GATE, 0.13, projection).polygons.without_area(0).output("poly.8", "poly.8 : Min. Poly extention Gate (endcap) : 0.13um")
 POLY.and(RPM.or(URPM).or(POLY_RS)).separation(POLY.or(DIFFTAP), 0.48, euclidian).polygons.without_area(0).output("poly.9", "poly.9 : Min. POLY resistor space to Poly or DIFF/TAP : 0.48um")
@@ -612,7 +612,6 @@ HVI.isolated(0.7, euclidian).output("hvi.2", "hvi.2 : Min. HVI spacing, merge if
 HVI.and(TUNM).output("hvi.4", "hvi.4 : HVI must not overlapp TUNM")
 HVI.and(NWELL).separation(NWELL, 2.0, euclidian).output("hvnwell.8", "hvnwelli.8 : Min. HVNWEL spacing to NWELL : 2.0")
 AREAID_HL.not(HVI).output("hvnwel.9", "hvnwell.9 : HVI must overlapp HVNWELL")
-HVI.and(NWELL).not(AREAID_HL).output("hvnwell.9", "hvnwell.9 : HVI must overlapp HVNWELL")
 # rule hvnell.10 not coded
 DIFF.not(PSDM.and(DIFF_RS)).and(HVI).width(0.29, euclidian).output("hvdifftap.14", "hvdifftap.14 : Min. DIFF inside HVI width : 0.29um")
 DIFF.and(PSDM.and(DIFF_RS)).and(HVI).width(0.15, euclidian).output("hvdifftap.14a", "hvdifftap.14a : Min. P+Diff resistor inside HVI width : 0.15um")
@@ -623,13 +622,14 @@ HVI.and(NWELL).enclosing(DIFF, 0.33, euclidian).output("hvdifftap.17", "hvdiffta
 HVI.and(NWELL).separation(DIFF, 0.43, euclidian).output("hvdifftap.18", "hvdifftap.18 : Min. HVNWell spacing to N+Diff : 0.43um")
 HVI.and(NWELL).enclosing(TAP, 0.33, euclidian).output("hvdifftap.19", "hvdifftap.19 : Min. HVNWell enclosure of N+Tap : 0.33um")
 HVI.and(NWELL).separation(TAP, 0.43, euclidian).output("hvdifftap.20", "hvdifftap.20 : Min. HVNWell spacing to P+Tap : 0.43um")
-HVI.and(DIFFTAP).edges.not(HVI.edges).output("hvdifftap.21", "hvdifftap.21 : DIFF or TAP must not straddle HVI")
+HVI.and(DIFF).edges.not(DIFF.edges).output("hvdifftap.21", "hvdifftap.21 : DIFF must not straddle HVI")
+HVI.and(TAP).edges.not(TAP.edges).output("hvdifftap.21", "hvdifftap.21 : TAP must not straddle HVI")
 HVI.enclosing(DIFFTAP, 0.18, euclidian).output("hvdifftap.22", "hvdifftap.22 : Min. HVI enclosure of DIFF or TAP : 0.18um")
 HVI.separation(DIFFTAP, 0.18, euclidian).output("hvdifftap.23", "hvdifftap.23 : Min. HVI spacing to DIFF or TAP : 0.18um")
 HVI.and(DIFF).not(NWELL).separation(NWELL, 0.43, euclidian).output("hvdifftap.24", "hvdifftap.24 : Min. HV N+Diff spacing to NWELL : 0.43um")
 DIFF.and(HVI).not(NWELL).isolated(1.07, euclidian).polygons.and(TAP).output("hvdifftap.25", "hvdifftap.25 : Min. N+Diff inside HVI spacing accros P+Tap  : 1.07um")
 DIFF.not(POLY).edges.and(GATE.and(HVI).edges).space(0.35, euclidian).output("hvpoly.13", "hvpoly.13: Min. HVI Gate length : 0.5um")
-HVI.and(POLY).edges.not(HVI.edges).output("hvpoly.14", "hvpoly.14 : POLY must not straddle HVI")
+HVI.and(POLY).edges.not(POLY.edges).output("hvpoly.14", "hvpoly.14 : POLY must not straddle HVI")
 
 #   HVNTM
 HVNTM.width(0.7, euclidian).output("hvntm.1", "hvntm.1 : Min. HVNTM width : 0.7um")
@@ -689,9 +689,9 @@ VHVI.width(0.02, euclidian).output("vhvi.1", "vhvi.1 : Min. VHVI width : 0.02um"
 VHVI.and(AREAID_CE).output("vhvi.2", "vhvi.2 : VHVI must not overlap areaid.ce")
 VHVI.and(HVI).output("vhvi.3", "vhvi.3 : VHVI must not overlap HVI")
 # rules vhvi.4, vhvi.6 not coded
-VHVI.and(DIFF).edges.not(VHVI.edges).output("vhvi.5", "vhvi.5 : VHVI must not straddle DIFF")
-VHVI.and(TAP).edges.not(VHVI.edges).output("vhvi.5", "vhvi.5 : VHVI must not straddle TAP")
-VHVI.and(POLY).edges.not(VHVI.edges).output("vhvi.7", "vhvi.7 : VHVI must not straddle POLY")
+VHVI.and(DIFF).edges.not(DIFF.edges).output("vhvi.5", "vhvi.5 : VHVI must not straddle DIFF")
+VHVI.and(TAP).edges.not(TAP.edges).output("vhvi.5", "vhvi.5 : VHVI must not straddle TAP")
+VHVI.and(POLY).edges.not(POLY.edges).output("vhvi.7", "vhvi.7 : VHVI must not straddle POLY")
 
 NWELL.and(VHVI).separation(NWELL, 2.5, euclidian).output("hv.nwell.1", "hv.nwell.1 : Min. VHVI NWell spacing to NWell : 2.5um")
 DIFF.and(VHVI).isolated(0.3, euclidian).output("hv.diff.1", "hv.diff.1 : Min. VHVI DIFF spacing : 0.3um")
@@ -705,11 +705,11 @@ NWELL.enclosing(POLY.and(VHVI).not(DIFF), 0.3, euclidian).polygons.without_area(
 # rule hv.poly.7 not coded
 
 #   UHVI
-UHVI.and(DIFF).edges.not(UHVI.edges).output("uhvi.1", "uhvi.1 : DIFF must not straddle UHVI")
-UHVI.and(TAP).edges.not(UHVI.edges).output("uhvi.1", "uhvi.1 : TAP must not straddle UHVI")
-UHVI.and(POLY).edges.not(UHVI.edges).output("uhvi.2", "uhvi.2 : POLY must not straddle UHVI")
+UHVI.and(DIFF).edges.not(DIFF.edges).output("uhvi.1", "uhvi.1 : DIFF must not straddle UHVI")
+UHVI.and(TAP).edges.not(TAP.edges).output("uhvi.1", "uhvi.1 : TAP must not straddle UHVI")
+UHVI.and(POLY).edges.not(POLY.edges).output("uhvi.2", "uhvi.2 : POLY must not straddle UHVI")
 PWBM.not(UHVI).output("uhvi.3", "uhvi.3 : UHVI must not enclose PWBM")
-UHVI.and(DNWELL).edges.not(UHVI.edges).output("uhvi.4", "uhvi.4 : DNWELL must not straddle UHVI")
+UHVI.and(DNWELL).edges.not(DNWELL.edges).output("uhvi.4", "uhvi.4 : DNWELL must not straddle UHVI")
 AREAID_EN20.not(UHVI).output("uhvi.5", "uhvi.5 : UHVI must not enclose areaid.en20")
 #DNWELL.not(UHVI).output("uhvi.6", "uhvi.6 : UHVI must not enclose DNWELL")
 NATFET.not(UHVI).output("uhvi.7", "uhvi.7 : UHVI must not enclose natfet")
