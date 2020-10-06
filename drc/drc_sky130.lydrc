@@ -203,8 +203,8 @@ PWDE.not(DNWELL).output("pwdem.5", "pwdem.5 : PWDE must be inside DNWELL")
 #HVTP.not(NWELL).output("hvtp", "HVTP must inside NWELL")
 HVTP.width(0.38, euclidian).output("hvtp.1", "hvtp.1 : Min. HVTP width : 0.38um")
 HVTP.isolated(0.38, euclidian).output("hvtp.2", "hvtp.2 : Min. HVTP spacing : 0.38um")
-HVTP.enclosing(DIFF, 0.18, euclidian).output("hvtp.3", "hvtp.3 : Min. HVTP enclosure of PFET : 0.18um")
-HVTP.separation(DIFF, 0.18, euclidian).output("hvtp.4", "hvtp.4 : Min. HVTP spacing PFET : 0.18um")
+HVTP.enclosing(GATE.and(PSDM), 0.18, euclidian).output("hvtp.3", "hvtp.3 : Min. HVTP enclosure of PFET gate : 0.18um")
+HVTP.separation(GATE.and(PSDM), 0.18, euclidian).output("hvtp.4", "hvtp.4 : Min. HVTP spacing PFET gate : 0.18um")
 HVTP.with_area(0..0.265).output("hvtp.5", "hvtp.5 : Min. HVTP area : 0.265um²")
 
 #   HVTR
@@ -312,7 +312,8 @@ NPC.separation(GATE, 0.09, euclidian).output("npc.4", "npc.4 : Min. NPC spacing 
 
 #   NSDM/PSDM
 NPSDM = NSDM + PSDM
-NPSDM.width(0.38, euclidian).output("n/psdm.1", "n/psdm.1 : Min. N/PSDM width : 0.38um")
+NSDM.width(0.38, euclidian).output("nsdm.1", "nsdm.1 : Min. NSDM width : 0.38um")
+PSDM.width(0.38, euclidian).output("psdm.1", "psdm.1 : Min. PSDM width : 0.38um")
 NSDM.isolated(0.38, euclidian).output("n/psdm.1", "n/psdm.1 : Min. NSDM spacing, should be mnually merge if less : 0.38um")
 PSDM.isolated(0.38, euclidian).output("n/psdm.1", "n/psdm.1 : Min. PSDM spacing, should be mnually merge if less : 0.38um")
 NPSDM.enclosing(DIFF, 0.125, euclidian).polygons.not(TAP.sized(0.125)).output("n/psdm.5a", "n/psdm.5a : Min. N/PSDM enclosure DIFF except butting edge : 0.125um")
@@ -578,8 +579,8 @@ if bakend_flow = CU
 end
 
 #   VIA4
-VIA4.edges.without_length(0.2).output("via4.1a", "via4.1a : Minimum/Maximum width of VIA4 : 0.2um")
-VIA4.isolated(0.2, euclidian).output("via4.2", "via4.2 : Min. VIA4 spacing : 0.2um")
+VIA4.edges.without_length(0.8).output("via4.1a", "via4.1a : Minimum/Maximum width of VIA4 : 0.8um")
+VIA4.isolated(0.8, euclidian).output("via4.2", "via4.2 : Min. VIA4 spacing : 0.8um")
 #rule via4.3 not coded
 M4.enclosing(VIA4, 0.19, euclidian).output("via4.4", "via4.4 : Min. M4 enclosure of VIA4 : 0.19um")
 VIA4.not(M4).output("via4", "via4 : M4 must enclose all VIA4")
