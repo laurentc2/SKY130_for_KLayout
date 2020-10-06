@@ -280,7 +280,7 @@ PSDM.enclosing(POLY.and(POLY_RS).and(RPM), 0.11, euclidian).output("rpm.4", "rpm
 NPC.enclosing(POLY.and(POLY_RS).and(RPM), 0.095, euclidian).output("rpm.5", "rpm.5 : Min. NPC enclosure of POLY resistor : 0.095um")
 RPM.separation(NSDM, 0.2, euclidian).output("rpm.6", "rpm.6 : Min. RPM spacing NSDM: 0.2um")
 RPM.separation(POLY, 0.2, euclidian).output("rpm.7", "rpm.7 : Min. RPM spacing POLY: 0.2um")
-RPM.and(POLY).edges.not(RPM.edges).output("rpm.8", "rpm.8 : POLY must not straddle RPM")
+RPM.and(POLY).edges.not(POLY.edges).output("rpm.8", "rpm.8 : POLY must not straddle RPM")
 POLY.and(POLY_RS).and(RPM).separation(HVNTM, 0.185, euclidian).output("rpm.9", "rpm.9 : Min. POLY resistor spacing HVNTM: 0.185um")
 RPM.and(PWBM).output("rpm.10", "rpm.107 : Min. RPM spacing PWBM: NA")
 
