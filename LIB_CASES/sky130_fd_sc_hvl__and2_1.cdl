@@ -1,0 +1,25 @@
+* Copyright 2020 The SkyWater PDK Authors
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     https://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*
+* SPDX-License-Identifier: Apache-2.0
+
+.SUBCKT sky130_fd_sc_hvl__and2_1 A B VGND VNB VPB VPWR X
+*.PININFO A:I B:I VGND:I VNB:I VPB:I VPWR:I X:O
+MMP0 y A VPWR VPB pfet_g5v0d10v5 w=0.42 l=0.5
+MMP1 y B VPWR VPB pfet_g5v0d10v5 w=0.42 l=0.5
+MMIP0 X y VPWR VPB pfet_g5v0d10v5 w=1.5 l=0.5
+MMN0 y A sndA VNB nfet_g5v0d10v5 w=0.42 l=0.5
+MMN1 sndA B VGND VNB nfet_g5v0d10v5 w=0.42 l=0.5
+MMIN0 X y VGND VNB nfet_g5v0d10v5 w=0.75 l=0.5
+.ENDS sky130_fd_sc_hvl__and2_1
