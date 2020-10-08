@@ -18,5 +18,6 @@ Then, you can copy the file **SKY130.lyp**, **SKY130.lyt** and the 2 directories
 `#HOMEDATA#/klayout/tech/SKY130  (under Windows)`
 
 Due to few **SKY130 GDS** cases found and tested, the DRC/LVS files have not been extensively tested and still probably have bugs for some cases.
+It was tested on the GDS and spice netlists of the LIB_CASES directory.
 The more we can publish **SKY130 GDS** files, the better those DRC/LVS files.
 At that stage, the GDS needs another checks before tape-out.
