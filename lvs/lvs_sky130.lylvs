@@ -89,7 +89,7 @@ HVNTM  = polygons(125, 20)
 POLY  = polygons(66, 20)
 POLYTXT  = input(66, 5)
 POLYPIN  = polygons(66, 16)
-THKOX  = polygons(75, 20)
+HVI  = polygons(75, 20)
 LICON  = polygons(66, 44)
 NPC  = polygons(95, 20)
 DIFFRES  = polygons(65, 13)
@@ -147,26 +147,32 @@ PDIFF = DIFF &amp; NWELL &amp; PSDM
 NTAP = TAP &amp; NWELL &amp; NSDM
 PGATE = PDIFF &amp; POLY
 PSD = PDIFF - PGATE
-STD_PGATE = PGATE - HVTP - NCM
-HV_PGATE = PGATE &amp; HVTP - NCM
-
+STD_PGATE = PGATE - HVTP - NCM - HVI
+HVT_PGATE = PGATE &amp; HVTP - NCM - HVI
+HV5_PGATE = PGATE - HVTP - NCM &amp; HVI
+  
 NDIFF = DIFF - NWELL &amp; NSDM
 PTAP = TAP - NWELL &amp; PSDM
 NGATE = NDIFF &amp; POLY
 NSD = NDIFF - NGATE
-STD_NGATE = NGATE - NCM - LVTN
-LV_NGATE = NGATE - NCM &amp; LVTN
+STD_NGATE = NGATE - NCM - LVTN - HVI
+LVT_NGATE = NGATE - NCM &amp; LVTN - HVI
+HV5_NGATE = NGATE - NCM - LVTN &amp; HVI
+HV5NA_NGATE = NGATE - NCM &amp; LVTN &amp; HVI
 
 # drawing to physical
 device_scaling(1000000)
 
 # PMOS transistor device extraction
 extract_devices(mos4("pfet_01v8"), { "SD" =&gt; PSD, "G" =&gt; STD_PGATE, "tS" =&gt; PSD, "tD" =&gt; PSD, "tG" =&gt; POLY, "W" =&gt; NWELL })
-extract_devices(mos4("pfet_01v8_hvt"), { "SD" =&gt; PSD, "G" =&gt; HV_PGATE, "tS" =&gt; PSD, "tD" =&gt; PSD, "tG" =&gt; POLY, "W" =&gt; NWELL })
+extract_devices(mos4("pfet_01v8_hvt"), { "SD" =&gt; PSD, "G" =&gt; HVT_PGATE, "tS" =&gt; PSD, "tD" =&gt; PSD, "tG" =&gt; POLY, "W" =&gt; NWELL })
+extract_devices(mos4("pfet_g5v0d10v5"), { "SD" =&gt; PSD, "G" =&gt; HV5_PGATE, "tS" =&gt; PSD, "tD" =&gt; PSD, "tG" =&gt; POLY, "W" =&gt; NWELL })
 
 # NMOS transistor device extraction
 extract_devices(mos4("nfet_01v8"), { "SD" =&gt; NSD, "G" =&gt; STD_NGATE, "tS" =&gt; NSD, "tD" =&gt; NSD, "tG" =&gt; POLY, "W" =&gt; SUB })
-extract_devices(mos4("nfet_01v8_lvt"), { "SD" =&gt; NSD, "G" =&gt; LV_NGATE, "tS" =&gt; NSD, "tD" =&gt; NSD, "tG" =&gt; POLY, "W" =&gt; SUB })
+extract_devices(mos4("nfet_01v8_lvt"), { "SD" =&gt; NSD, "G" =&gt; LVT_NGATE, "tS" =&gt; NSD, "tD" =&gt; NSD, "tG" =&gt; POLY, "W" =&gt; SUB })
+extract_devices(mos4("nfet_g5v0d10v5"), { "SD" =&gt; NSD, "G" =&gt; HV5_NGATE, "tS" =&gt; NSD, "tD" =&gt; NSD, "tG" =&gt; POLY, "W" =&gt; SUB })
+extract_devices(mos4("nfet_01v8_nvt"), { "SD" =&gt; NSD, "G" =&gt; HV5NA_NGATE, "tS" =&gt; NSD, "tD" =&gt; NSD, "tG" =&gt; POLY, "W" =&gt; SUB })
 
 
 # Define connectivity for netlist extraction
