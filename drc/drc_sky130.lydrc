@@ -307,7 +307,7 @@ photodiode.separation(dnwell, 5.3, euclidian).output("photo.4", "photo.4 : mini.
 areaid_po.not(dnwell).output("photo.5.6", "photo.5.6 : photodiode edges must coincide areaid.po and enclosed by dnwell")
 photodiode.not(tap.not(nwell).holes).output("photo.7", "photo.7 : photodiode must be enclosed by p+tap ring")
 photodiode.and(nwell).edges.without_length(0.84).output("photo.8", "photo.8 : minimum/maximum width of nwell inside photodiode : 0.84um")
-areaid_po.edges.and(photodiode.and(nwell).size(1.08)).without_length(12.0).output("photo.9", "photo.9 : minimum/maximum enclosure of nwell by photodiode : 1.08um")
+areaid_po.edges.and(photodiode.and(nwell).sized(1.08)).without_length(12.0).output("photo.9", "photo.9 : minimum/maximum enclosure of nwell by photodiode : 1.08um")
 photodiode.and(tap).edges.without_length(0.41).output("photo.10", "photo.10 : minimum/maximum width of tap inside photodiode : 0.41um")
 
 #   npc
@@ -416,7 +416,7 @@ li.interacting(li.and(m1).not(mcon).with_holes(1,10)).enclosing(mcon, 0.2, eucli
 li.interacting(li.and(m1).not(mcon).with_holes(11,100)).enclosing(mcon, 0.3, euclidian).output("ct.irdrop.2", "ct.irdrop.2 : min. li enclsoure of 11..100 mcon : 0.3um")
 
 #   m1
-huge_m1 = m1.size(-1.5).size(1.5)
+huge_m1 = m1.sized(-1.5).sized(1.5)
 m1.width(0.14, euclidian).output("m1.1", "m1.1 : min. m1 width : 0.14um")
 m1.isolated(0.14, euclidian).output("m1.2", "m1.2 : min. m1 spacing : 0.14um")
 huge_m1.separation(m1, 0.28, euclidian).output("m1.3ab", "m1.3ab : min. 3um.m1 spacing m1 : 0.28um")
@@ -467,7 +467,7 @@ if backend_flow = CU
 end
 
 #   m2
-huge_m2 = m2.size(-1.5).size(1.5)
+huge_m2 = m2.sized(-1.5).sized(1.5)
 m2.width(0.14, euclidian).output("m2.1", "m2.1 : min. m2 width : 0.14um")
 m2.isolated(0.14, euclidian).output("m2.2", "m2.2 : min. m2 spacing : 0.14um")
 huge_m2.separation(m2, 0.28, euclidian).output("m2.3ab", "m2.3ab : min. 3um.m2 spacing m2 : 0.28um")
@@ -510,7 +510,7 @@ if backend_flow = CU
 end
 
 #   m3
-huge_m3 = m3.size(-1.5).size(1.5)
+huge_m3 = m3.sized(-1.5).sized(1.5)
 m3.width(0.3, euclidian).output("m3.1", "m3.1 : min. m3 width : 0.3um")
 m3.isolated(0.3, euclidian).output("m3.2", "m3.2 : min. m3 spacing : 0.3um")
 huge_m3.separation(m3, 0.4, euclidian).output("m3.3ab", "m3.3ab : min. 3um.m3 spacing m3 : 0.4um")
@@ -578,7 +578,7 @@ if backend_flow = AL
 end  
 
 #   m4
-huge_m4 = m4.size(-1.5).size(1.5)
+huge_m4 = m4.sized(-1.5).sized(1.5)
 m4.width(0.3, euclidian).output("m4.1", "m4.1 : min. m4 width : 0.3um")
 m4.isolated(0.3, euclidian).output("m4.2", "m4.2 : min. m4 spacing : 0.3um")
 m4.with_area(0..0.24).output("m4.4", "m4.4 : min. m2 area : 0.24um²")
@@ -668,7 +668,7 @@ poly.not_interacting(pwde).interacting(areaid_en).width(1.055, projection).outpu
 diff.not_interacting(pwde).enclosing(poly.interacting(areaid_en), 0.28, projection).polygons.without_area(0).output("denmos.2", "denmos.2 : min. de_nfet source ouside poly width : 0.28um")
 diff.not_interacting(pwde).and(poly.interacting(areaid_en)).width(0.925, projection).output("denmos.3", "denmos.3 : min. de_nfet source inside poly width : 0.925um")
 diff.not_interacting(pwde).interacting(areaid_en).not_interacting(poly).width(0.17, euclidian).output("denmos.4", "denmos.4 : min. de_nfet drain width : 0.17um")
-nwell.not_interacting(pwde).and(poly.interacting(areaid_en)).width(0.225, projection).polygons.or(nwell.and(poly.interacting(areaid_en)).size(-0.1125).size(0.1125)).output("denmos.5", "denmos.5 : min. de_nfet source inside nwell width : 0.225m")
+nwell.not_interacting(pwde).and(poly.interacting(areaid_en)).width(0.225, projection).polygons.or(nwell.and(poly.interacting(areaid_en)).sized(-0.1125).sized(0.1125)).output("denmos.5", "denmos.5 : min. de_nfet source inside nwell width : 0.225m")
 diff.not_interacting(pwde).interacting(areaid_en).not_interacting(poly).separation(diff.interacting(poly.interacting(areaid_en)), 1.585, projection).output("denmos.6", "denmos.6 : min. de_nfet source spacing to drain : 1.585um")
 nwell.not_interacting(pwde).and(poly.and(diff).interacting(areaid_en)).edges.without_length(5.0, nil).output("denmos.7", "denmos.7 : min. de_nfet channel width : 5.0um")
 diff.not_interacting(pwde).interacting(areaid_en).not_interacting(poly).edges.without_angle(45).without_angle(135).without_angle(225).without_angle(315).output("denmos.8", "denmos.8 : 90deg. not allowed for de_nfet drain")
@@ -687,7 +687,7 @@ poly.interacting(pwde).interacting(areaid_en).width(1.05, projection).output("de
 diff.interacting(pwde).enclosing(poly.interacting(areaid_en), 0.28, projection).polygons.without_area(0).output("depmos.2", "depmos.2 : min. de_pfet source ouside poly width : 0.28um")
 diff.interacting(pwde).and(poly.interacting(areaid_en)).width(0.92, projection).output("depmos.3", "depmos.3 : min. de_pfet source inside poly width : 0.92um")
 diff.interacting(pwde).interacting(areaid_en).not_interacting(poly).width(0.17, euclidian).output("depmos.4", "depmos.4 : min. de_pfet drain width : 0.17um")
-pwde.not(nwell).and(poly.interacting(areaid_en)).width(0.26, projection).polygons.or(pwde.not(nwell).and(poly.interacting(areaid_en)).size(-0.13).size(0.13)).output("depmos.5", "depmos.5 : min. de_pfet source inside nwell width : 0.26m")
+pwde.not(nwell).and(poly.interacting(areaid_en)).width(0.26, projection).polygons.or(pwde.not(nwell).and(poly.interacting(areaid_en)).sized(-0.13).sized(0.13)).output("depmos.5", "depmos.5 : min. de_pfet source inside nwell width : 0.26m")
 diff.interacting(pwde).interacting(areaid_en).not_interacting(poly).separation(diff.interacting(poly.interacting(areaid_en)), 1.19, projection).output("depmos.6", "depmos.6 : min. de_pfet source spacing to drain : 1.19um")
 nwell.interacting(pwde).and(poly.and(diff).interacting(areaid_en)).edges.without_length(5.0, nil).output("depmos.7", "depmos.7 : min. de_pfet channel width : 5.0um")
 diff.interacting(pwde).interacting(areaid_en).not_interacting(poly).edges.without_angle(45).without_angle(135).without_angle(225).without_angle(315).output("depmos.8", "depmos.8 : 90deg. not allowed for de_pfet drain")
@@ -739,13 +739,13 @@ natfet.not(uhvi).output("uhvi.7", "uhvi.7 : uhvi must not enclose natfet")
 
 #   pwell_res
 pwell_rs.width(2.65).output("pwres.2", "pwres.2 : min. pwell resistor width : 2.65um")
-pwell_rs.size(-2.65).size(2.65).output("pwres.2", "pwres.2 : max. pwell resistor width : 2.65um")
+pwell_rs.sized(-2.65).sized(2.65).output("pwres.2", "pwres.2 : max. pwell resistor width : 2.65um")
 pwell_rs.interacting(pwell_rs.edges.with_length(2.651,26.499)).output("pwres.3", "pwres.3 : min. pwell resistor length : 265um")
 pwell_rs.interacting(pwell_rs.edges.with_length(265.0, nil)).output("pwres.4", "pwres.4 : max. pwell resistor length : 265um")
 tap.interacting(pwell_rs).separation(nwell, 0.22, euclidian).output("pwres.5", "pwres.5 : min. pwell resistor tap spacing to nwell : 0.22um")
 tap.interacting(pwell_rs).and(tap.sized(0.22).and(nwell)).output("pwres.5", "pwres.5 : max. pwell resistor tap spacing to nwell : 0.22um")
 tap.interacting(pwell_rs).width(0.53).output("pwres.6", "pwres.6 : min. width of tap inside pwell resistor : 0.53um")
-tap.interacting(pwell_rs).size(-0.265).size(0.265).output("pwres.6", "pwres.6 : max. width of tap inside pwell resistor : 0.53um")
+tap.interacting(pwell_rs).sized(-0.265).sized(0.265).output("pwres.6", "pwres.6 : max. width of tap inside pwell resistor : 0.53um")
 # rules pwres.7a, pwres.7b not coded
 pwell_rs.and(diff).output("pwres.8", "pwres.8 : diff not allowed inside pwell resistor")
 pwell_rs.and(poly).output("pwres.8", "pwres.8 : poly not allowed inside pwell resistor")
