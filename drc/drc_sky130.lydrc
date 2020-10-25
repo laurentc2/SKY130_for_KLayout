@@ -388,12 +388,13 @@ li.with_area(0..0.0561).output("li.6", "li.6 : min. li area : 0.0561um²")
 vpp.width(1.43, euclidian).output("vpp.1", "vpp.1 : min. vpp width : 1.43um")
 # rules 1.b, 1.c not coded
 vpp.and(poly.or(difftap)).output("vpp.3", "vpp.3 : vpp must not overlapp poly or diff or tap")
-vpp.and(nwell.or(dnwell)).edges.not(vpp.edges).output("vpp.4", "vpp.4 : vpp must not straddle nwell or dnwell")
+vpp.and(nwell).edges.not(vpp.edges).output("vpp.4", "vpp.4 : vpp must not straddle nwell")
+vpp.and(dnwell).edges.not(vpp.edges).output("vpp.4", "vpp.4 : vpp must not straddle dnwell")
 vpp.and(poly.or(li).or(m1).or(m2)).separation(poly.or(li).or(m1).or(m2), 1.5, euclidian).polygons.with_area(2.25,nil).output("vpp.5", "vpp.5 : min. vpp spacing to poly or li or m1 or m2 : 1.5um")
 vpp.with_area(0..area(vpp.and(m3))*0.25).output("vpp.5a", "vpp.5a : max. m3 density in vpp : 0.25")
 vpp.with_area(0..area(vpp.and(m4))*0.3).output("vpp.5b", "vpp.5b : max. m4 density in vpp : 0.3")
 vpp.with_area(0..area(vpp.and(m5))*0.4).output("vpp.5c", "vpp.5c : max. m5 density in vpp : 0.4")
-vpp.enclosing(vpp, 1.5, euclidian).output("vpp.8", "vpp.8 : nwell enclosure of vpp : 1.5")
+nwell.enclosing(vpp, 1.5, euclidian).output("vpp.8", "vpp.8 : nwell enclosure of vpp : 1.5")
 vpp.separation(nwell, 1.5, euclidian).polygons.without_area(0).output("vpp.9", "vpp.9 : vpp spacing to nwell : 1.5")
 # rule vpp.10 not coded
 # rule vpp.11 not coded because moscap is not defined properly by any gds layer
@@ -401,6 +402,24 @@ vpp.separation(nwell, 1.5, euclidian).polygons.without_area(0).output("vpp.9", "
 if backend_flow = CU
   m1.separation(vpp.and(m1), 0.16, euclidian).polygons.without_area(0).output("vpp.13", "vpp.13 : m1 spacing to m1inside vpp : 0.16")
 end
+
+# CAPM
+capm.width(1.0, euclidian).output("capm.1", "capm.1 : min. capm width : 1.0um")
+capm.isolated(0.84, euclidian).output("capm.2a", "capm.2a : min. capm spacing : 0.84um")
+m2.interacting(capm).isolated(1.2, euclidian).output("capm.2b", "capm.2b : min. capm spacing : 1.2um")
+m2.enclosing(capm, 0.14, euclidian).output("capm.3", "capm.3 : min. m2 enclosure of capm : 0.14um")
+capm.enclosing(via2, 0.14, euclidian).output("capm.4", "capm.4 : min. capm enclosure of via2 : 0.14um")
+capm.separation(via2, 0.14, euclidian).output("capm.5", "capm.5 : min. capm spacing to via2 : 0.14um")
+capm.sized(-20.0).sized(20.0).output("capm.6", "capm.6 : max. capm lenght/width : 20um")
+capm.with_angle(0 .. 90).output("capm.7", "capm.7 : capm not rectangle")
+capm.separation(via, 0.14, euclidian).polygons.without_area(0).output("capm.8", "capm.8 : min. capm spacing to via : 0.14um")
+capm.and(nwell).edges.not(capm.edges).output("capm.10", "capm.10 : capm must not straddle nwell")
+capm.and(diff).edges.not(capm.edges).output("capm.10", "capm.10 : capm must not straddle diff")
+capm.and(tap).edges.not(capm.edges).output("capm.10", "capm.10 : capm must not straddle tap")
+capm.and(poly).edges.not(capm.edges).output("capm.10", "capm.10 : capm must not straddle poly")
+capm.and(li).edges.not(capm.edges).output("capm.10", "capm.10 : capm must not straddle li")
+capm.and(m1).edges.not(capm.edges).output("capm.10", "capm.10 : capm must not straddle m1")
+capm.separation(m2.not_interacting(capm),  0.14, euclidian).output("capm.11", "capm.11 : min. capm spacing to m2 not overlapping capm : 0.5um")
 
 end #FEOL
 
@@ -412,8 +431,10 @@ mcon.edges.without_length(0.17).output("ct.1", "ct.1 : minimum/maximum width of 
 mcon.isolated(0.19, euclidian).output("ct.2", "ct.2 : min. mcon spacing : 0.19um")
 # rule ct.3 not coded
 mcon.not(li).output("ct.4", "ct.4 : mcon should covered by li")
-li.interacting(li.and(m1).not(mcon).with_holes(1,10)).enclosing(mcon, 0.2, euclidian).output("ct.irdrop.1", "ct.irdrop.1 : min. li enclsoure of 1..10 mcon : 0.2um")
-li.interacting(li.and(m1).not(mcon).with_holes(11,100)).enclosing(mcon, 0.3, euclidian).output("ct.irdrop.2", "ct.irdrop.2 : min. li enclsoure of 11..100 mcon : 0.3um")
+if backend_flow = CU
+  li.interacting(li.and(m1).not(mcon).with_holes(1,10)).enclosing(mcon, 0.2, euclidian).output("ct.irdrop.1", "ct.irdrop.1 : min. li enclsoure of 1..10 mcon : 0.2um")
+  li.interacting(li.and(m1).not(mcon).with_holes(11,100)).enclosing(mcon, 0.3, euclidian).output("ct.irdrop.2", "ct.irdrop.2 : min. li enclsoure of 11..100 mcon : 0.3um")
+end
 
 #   m1
 huge_m1 = m1.sized(-1.5).sized(1.5)
@@ -682,7 +703,7 @@ nwell.not_interacting(pwde).interacting(areaid_en).separation(tap.not(nwell), 0.
 nwell.not_interacting(pwde).interacting(areaid_en).isolated(2.4, euclidian).output("denmos.12", "denmos.12 : min. de_nfet nwell : 2.4um")
 nsdm.not_interacting(pwde).enclosing(diff.interacting(areaid_en).interacting(poly), 0.13, euclidian).output("denmos.13", "denmos.13 : min. nsdm enclosure of de_nfet source : 0.13um")
 
-#   pedmos
+#   depmos
 poly.interacting(pwde).interacting(areaid_en).width(1.05, projection).output("depmos.1", "depmos.1 : min. de_pfet gate width : 1.05um")
 diff.interacting(pwde).enclosing(poly.interacting(areaid_en), 0.28, projection).polygons.without_area(0).output("depmos.2", "depmos.2 : min. de_pfet source ouside poly width : 0.28um")
 diff.interacting(pwde).and(poly.interacting(areaid_en)).width(0.92, projection).output("depmos.3", "depmos.3 : min. de_pfet source inside poly width : 0.92um")
@@ -702,7 +723,6 @@ psdm.interacting(pwde).enclosing(diff.interacting(areaid_en).interacting(poly), 
 
 #   extd
 areaid_en.and(difftap).edges.not(difftap.edges).output("extd.1", "extd.1 : difftap must not straddle areaid.en")
-# rule extd.2 not coded
 difftap.interacting(areaid_en).not(poly).with_area(0).output("extd.2", "extd.2 : poly must not overlapp entirely difftap in areaid.en")
 # rules extd.4, extd.5, extd.6, extd.7 not coded because specific to some cells
 
@@ -740,7 +760,7 @@ natfet.not(uhvi).output("uhvi.7", "uhvi.7 : uhvi must not enclose natfet")
 #   pwell_res
 pwell_rs.width(2.65).output("pwres.2", "pwres.2 : min. pwell resistor width : 2.65um")
 pwell_rs.sized(-2.65).sized(2.65).output("pwres.2", "pwres.2 : max. pwell resistor width : 2.65um")
-pwell_rs.interacting(pwell_rs.edges.with_length(2.651,26.499)).output("pwres.3", "pwres.3 : min. pwell resistor length : 265um")
+pwell_rs.interacting(pwell_rs.edges.with_length(2.651,26.499)).output("pwres.3", "pwres.3 : min. pwell resistor length : 26.5um")
 pwell_rs.interacting(pwell_rs.edges.with_length(265.0, nil)).output("pwres.4", "pwres.4 : max. pwell resistor length : 265um")
 tap.interacting(pwell_rs).separation(nwell, 0.22, euclidian).output("pwres.5", "pwres.5 : min. pwell resistor tap spacing to nwell : 0.22um")
 tap.interacting(pwell_rs).and(tap.sized(0.22).and(nwell)).output("pwres.5", "pwres.5 : max. pwell resistor tap spacing to nwell : 0.22um")
