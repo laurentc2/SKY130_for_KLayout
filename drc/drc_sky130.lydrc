@@ -145,10 +145,10 @@ areaid_et = polygons(81, 101)
 areaid_lvt = polygons(81, 108)
 areaid_re = polygons(81, 125)
 areaid_ag = polygons(81, 79)
-poly_rs = polygons(66.13)
-diff_rs = polygons(65.13)
-pwell_rs = polygons(64.13)
-li_rs = polygons(67.13)
+poly_rs = polygons(66, 13)
+diff_rs = polygons(65, 13)
+pwell_rs = polygons(64, 13)
+li_rs = polygons(67, 13)
 cfom = polygons(22, 20)
 
 
@@ -332,12 +332,12 @@ nsdm.with_area(0..0.265).output("n/psdm.10a", "n/psdm.10a : min. nsdm area : 0.2
 psdm.with_area(0..0.265).output("n/psdm.10b", "n/psdm.10b : min. psdm area : 0.265um²")
 
 #   licon
-licon.not(poly_rs).edges.without_length(0.17).output("licon.1", "licon.1 : minimum/maximum width of licon : 0.17um")
-licon.and(poly_rs).not_interacting((licon.and(poly_rs).edges.with_length(0.19)).or(licon.and(poly_rs).edges.with_length(2.0))).output("licon.1b/c", "licon.1b/c : minimum/maximum width/length of licon inside poly resistor : 2.0/0.19um")
+licon.not(poly.interacting(poly_rs)).edges.without_length(0.17).output("licon.1", "licon.1 : minimum/maximum width of licon : 0.17um")
+licon.and(poly.interacting(poly_rs)).not_interacting((licon.and(poly.interacting(poly_rs)).edges.with_length(0.19)).or(licon.and(poly.interacting(poly_rs)).edges.with_length(2.0))).output("licon.1b/c", "licon.1b/c : minimum/maximum width/length of licon inside poly resistor : 2.0/0.19um")
 licon.isolated(0.17, euclidian).output("licon.2", "licon.2 : min. licon spacing : 0.17um")
-licon.and(poly_rs).edges.with_length(0.19).space(0.35, euclidian).output("licon.2b", "licon.2b : min. licon 0.19um edge on resistor spacing : 0.35um")
-licon.interacting(licon.and(poly_rs).edges.with_length(2.0)).separation(licon.and(poly_rs), 0.51, euclidian).output("licon.2c", "licon.2c : min. licon 2.0um edge on resistor spacing : 0.51um")
-licon.and(poly_rs).separation(licon.not(poly_rs), 0.51, euclidian).output("licon.2d", "licon.2d : min. licon on resistor spacing other licon : 0.51um")
+licon.and(poly.interacting(poly_rs)).edges.with_length(0.19).space(0.35, euclidian).output("licon.2b", "licon.2b : min. licon 0.19um edge on resistor spacing : 0.35um")
+licon.interacting(licon.and(poly.interacting(poly_rs)).edges.with_length(2.0)).separation(licon.and(poly.interacting(poly_rs)), 0.51, euclidian).output("licon.2c", "licon.2c : min. licon 2.0um edge on resistor spacing : 0.51um")
+licon.and(poly.interacting(poly_rs)).separation(licon.not(poly.interacting(poly_rs)), 0.51, euclidian).output("licon.2d", "licon.2d : min. licon on resistor spacing other licon : 0.51um")
 # rule licon.3 not coded
 licon.not(li).not(poly.or(diff).or(tap)).output("licon.4", "licon.4 : min. licon must overlap li and (poly or tap or diff) ")
 diff.enclosing(licon, 0.04, euclidian).output("licon.5", "licon.5 : min. diff enclosure of licon : 0.04um")
@@ -346,9 +346,10 @@ licon_edges_with_less_enclosure_tap = tap.enclosing(licon, 0.12, projection).sec
 opposite1 = (licon.edges - licon_edges_with_less_enclosure_tap).width(0.17 + 1.dbu, projection).polygons
 licon.not_interacting(opposite1).output("licon.7", "licon.7 : min. tap enclosure of licon by one of 2 opposite edges : 0.12um")
 poly.enclosing(licon, 0.05, euclidian).output("licon.8", "licon.8 : min. poly enclosure of licon : 0.05um")
+licon008 = licon.interacting(poly.enclosing(licon, 0.08, euclidian).polygons)
 licon_edges_with_less_enclosure_poly = poly.enclosing(licon, 0.08, projection).second_edges
 opposite2 = (licon.edges - licon_edges_with_less_enclosure_poly).width(0.17 + 1.dbu, projection).polygons
-licon.not_interacting(opposite2).output("licon.8a", "licon.8a : min. poly enclosure of licon by one of 2 opposite edges : 0.08um")
+licon008.not_interacting(opposite2).output("licon.8a", "licon.8a : min. poly enclosure of licon by one of 2 opposite edges : 0.08um")
 # rule licon.9 not coded
 licon.and(tap.and(nwell.not(hvi))).separation(varac, 0.25, euclidian).output("licon.10", "licon.10 : min. licon spacing to varac channel : 0.25um")
 not_in_cell4 = layout(source.cell_obj).select("-s8fs_gwdlvx4", "-s8fs_gwdlvx8", "-s8fs_hvrsw_x4", "-s8fs_hvrsw8", "-s8fs_hvrsw264", "-s8fs_hvrsw520", "-s8fs_rdecdrv", "-s8fs_rdec8”, “s8fs_rdec32", "-s8fs_rdec264", "-s8fs_rdec520")
@@ -379,9 +380,10 @@ in_cell5_li.width(0.14, euclidian).output("li.1a", "li.1a : min. li width for th
 # rule li.2 not coded
 not_in_cell5_li.isolated(0.17, euclidian).output("li.3", "li.3 : min. li spacing : 0.17um")
 in_cell5_li.isolated(0.14, euclidian).output("li.3a", "li.3a : min. li spacing for the cells s8rf2_xcmvpp_hd5_* : 0.14um")
+licon08 = licon.interacting(li.enclosing(licon, 0.08, euclidian).polygons)
 licon_edges_with_less_enclosure_li = li.enclosing(licon, 0.08, projection).second_edges
 opposite3 = (licon.edges - licon_edges_with_less_enclosure_li).width(0.17 + 1.dbu, projection).polygons
-licon.not_interacting(opposite3).output("li.5", "li.5 : min. li enclosure of licon of 2 opposite edges : 0.08um")
+licon08.not_interacting(opposite3).output("li.5", "li.5 : min. li enclosure of licon of 2 opposite edges : 0.08um")
 li.with_area(0..0.0561).output("li.6", "li.6 : min. li area : 0.0561um²")
 
 #   vpp
@@ -450,9 +452,10 @@ in_cell6_m1.enclosing(mcon, 0.005, euclidian).output("m1.4a", "m1.4a : min. m1 e
 m1.with_area(0..0.083).output("m1.6", "m1.6 : min. m1 area : 0.083um²")
 m1.holes.with_area(0..0.14).output("m1.7", "m1.7 : min. m1 holes area : 0.14um²")
 if backend_flow = AL
+  mcon06 = mcon.interacting(poly.enclosing(m1, 0.06, euclidian).polygons)
   mcon_edges_with_less_enclosure_m1 = m1.enclosing(mcon, 0.06, projection).second_edges
   opposite4 = (mcon.edges - mcon_edges_with_less_enclosure_m1).width(0.17 + 1.dbu, projection).polygons
-  mcon.not_interacting(opposite4).output("m1.5", "m1.5 : min. m1 enclosure of mcon of 2 opposite edges : 0.06um")
+  mcon06.not_interacting(opposite4).output("m1.5", "m1.5 : min. m1 enclosure of mcon of 2 opposite edges : 0.06um")
   # rule m1.pd.1, rule m1.pd.2a, rule m1.pd.2b not coded
 end
 if bakend_flow = CU
