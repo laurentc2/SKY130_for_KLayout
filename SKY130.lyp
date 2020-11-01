@@ -3095,6 +3095,23 @@
   <source>86/20@1</source>
  </properties>
  <properties>
+  <frame-color>#ffffff</frame-color>
+  <fill-color>#c896ff</fill-color>
+  <frame-brightness>0</frame-brightness>
+  <fill-brightness>0</fill-brightness>
+  <dither-pattern>C38</dither-pattern>
+  <line-style>C0</line-style>
+  <valid>true</valid>
+  <visible>true</visible>
+  <transparent>false</transparent>
+  <width>1</width>
+  <marked>false</marked>
+  <xfill>false</xfill>
+  <animation>0</animation>
+  <name>urpm.drawing - 79/20</name>
+  <source>79/20@1</source>
+ </properties>
+ <properties>
   <frame-color>#9900e6</frame-color>
   <fill-color>#9900e6</fill-color>
   <frame-brightness>0</frame-brightness>
