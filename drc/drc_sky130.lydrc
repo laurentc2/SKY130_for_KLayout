@@ -25,6 +25,7 @@
 #   2020-10-04 : v1.0 : initial release
 #
 ##########################################################################################
+tstart = Time.now
 
 # optionnal for a batch launch :   klayout -b -rd input=my_layout.gds -rd report=sky130_drc.txt -r drc_sky130.drc
 if $input
@@ -862,5 +863,12 @@ pwell_rs.ongrid(0.005).output("pwell_rs_OFFGRID", "x.1b : OFFGRID vertex on pwel
 pwell_rs.with_angle(0 .. 45).output("pwell_rs_angle", "x.3a : non 45 degree angle pwell_rs")
 areaid_re.ongrid(0.005).output("areaid_re_OFFGRID", "x.1b : OFFGRID vertex on areaid.re")
 
-end #OFFGRID</text>
+end #OFFGRID
+ 
+# time spent for the DRC
+time = Time.now
+hours = ((time - tstart)/3600).to_i
+minutes = ((time - tstart)/60 - hours * 60).to_i
+seconds = ((time - tstart) - (minutes * 60 + hours * 3600)).to_i
+$stdout.write "DRC finished at : #{time.hour}:#{time.min}:#{time.sec}  -  DRC duration =  #{hours} hrs. #{minutes} min. #{seconds} sec.\n"</text>
 </klayout-macro>
