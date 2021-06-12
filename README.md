@@ -1,6 +1,6 @@
 # SKY130_for_KLayout
 
-## KLayout technology files for Skywater SKY130
+## KLayout (version 0.27 or higher) technology files for Skywater SKY130
 
  * SKY130.lyt   : technology and connections description
  * SKY130.lyp   : layers color and shape description
