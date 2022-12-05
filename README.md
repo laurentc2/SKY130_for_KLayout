@@ -8,7 +8,8 @@
  * SkyWater SKY130 Layers Reference.odt : SKY130 layers description in LibreOffice Writer format (compatible Word)
  * drc/drc_sky130.lydrc : DRC script
  * lvs/lvs_sky130.lylvs : LVS script  (coming soon, so far only for MOSfet)
- * def-lef/layermap.txt : layermap for the import_def.rb file
+ * def-lef/layermap.txt : layermap for the import_def.rb file : need to add in the config.mk file a line :
+         export GDS_LAYER_MAP = ../../../../$(PLATFORM_DIR)/layermap.txt
 
 Within KLayout, create the technolgy SKY130 by the menu : **[Tools]-[Manage Technologies]**  
 Then press + at the bottom left, you will add a new technology that you can call : _SKY130_
