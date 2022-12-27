@@ -19,7 +19,7 @@ For its generation with OpenROAD, I have added some file in the platforms/sky130
 
 An other early improvement before the redundant vias insertion is to use the script **drc_route_lines_sky130.lydrc** ... to avoid the vias !
 
-If a line between 2 Metal1 lines is routed in Metal2 can be in Metal1, changing it to Metal1 avoids 2 vias and improves the robustness of the layout to the back-end metallization process. Same with 2 Metal2 lines that are connected in Metal1 or Metal3, if the interconnection in Metal1 or Metal3 is changed to Metal2, it removes 2 vias in the routing. Ideally, this improvement should be done within OpenROAD. 
+If a line between 2 Metal1 lines is routed in Metal2 although it can be in Metal1 (without short-circuit or DRC error), changing it to Metal1 avoids 2 vias and improves the robustness of the layout to the back-end metallization process. Same with 2 Metal2 lines that are connected in Metal1 or Metal3, if the interconnection in Metal1 or Metal3 is changed to Metal2, it removes 2 vias in the routing. Ideally, this improvement should be done within OpenROAD. 
 
 The risk with that last improvement is that long Metal lines may generate antenna DRC errors - I did not notice it on my experiments. 
 
