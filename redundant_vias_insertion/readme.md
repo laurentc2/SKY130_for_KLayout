@@ -17,7 +17,7 @@ For its generation with OpenROAD, I have added some file in the platforms/sky130
 
 ---
 
-An other early improvement before the redundant vias is to use the script **drc_route_lines_sky130.lydrc** ... to avoid the vias !
+An other early improvement before the redundant vias insertion is to use the script **drc_route_lines_sky130.lydrc** ... to avoid the vias !
 
 If a line between 2 Metal1 lines routed in Metal2 can be in Metal1, it avoids 2 vias and improves the robustness of the layout to the back-end metallization process. Same with 2 Metal2 lines that are connected in Metal1 or Metal3. Ideally, this improvement should be done within OpenROAD. 
 
