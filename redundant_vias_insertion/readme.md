@@ -1,4 +1,4 @@
-##  Redundant Via insertion
+##  Redundant Via insertion for SKY130 technology
 
 Redundant vias may lead to 10X-100X smaller failure rate that single vias.
 So, it is an important step after the place&route layout generation.
