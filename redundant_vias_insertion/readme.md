@@ -13,5 +13,6 @@ For its generation with OpenROAD, I have added some file in the platforms/sky130
  * sky130hd_lib.cdl   (to generate the layout netlist to check my flow)
  * config.mk   (I only added the 2 lines 135 and 136)
 
+
 An other early improvement before the redundant vias is to use the script drc_route_lines_sky130.lydrc ... to avoid the vias !
 If a line between 2 Metal1 lines routed in Metal2 can be in Metal1, it avoids 2 vias and improves the robustness of the layout to the back-end metallization process. Same with 2 Metal2 lines that are connected in Metal1 or Metal3. Ideally, this improvement should be done within OpenROAD. The risk with that last improvement is that long Metal lines may generate antenna DRC errors - I did not notice it on my experiments. The advantage is that it avoids the resistance of the vias and decreases the RC of the wire and so increase the circuit speed. If you use both metals, it further decreases the RC of the wire and further increases the circuit speed.
