@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description/>
+ <version/>
+ <category>drc</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <priority>0</priority>
+ <shortcut/>
+ <show-in-menu>true</show-in-menu>
+ <group-name>drc_scripts</group-name>
+ <menu-path>tools_menu.drc.end</menu-path>
+ <interpreter>dsl</interpreter>
+ <dsl-interpreter-name>drc-dsl-xml</dsl-interpreter-name>
+ <text>##################################
+# 180nm  Double VIA insertion
+##################################
+
+tstart = Time.now
+
+if $in_gds
+  if $topcell
+    source($in_gds,$topcell)
+  else
+    source($in_gds)
+  end
+end
+
+# options
+########################
+
+# layers definitions
+# inputs in deep mode, computation in flat mode
+# this way, the original layers stay hierarchical
+########################
+
+deep
+
+info("Layers definitions")
+M1 = input(68,20)
+V1 = input(68,44)
+M2 = input(69,20)
+V2 = input(69,44)
+M3 = input(70,20)
+V3 = input(70,44)
+M4 = input(71,20)
+V4 = input(71,44)
+M5 = input(72,20)
+
+flat
+
+# KLAYOUT setup
+########################
+# Use a tile size of 1mm
+tiles(1000.um)
+# Use a tile border of 10 micron:
+tile_borders(1.um)
+#no_borders
+
+# Use 4 CPU cores
+threads(4)
+verbose(true)
+
+# layers design rules
+########################
+via_size = 0.15.um
+via_space = 0.17.um
+large_metal1_over_via = 0.085.um
+small_metal1_over_via = 0.055.um
+large_metal2_over_via = 0.085.um
+small_metal2_over_via = 0.055.um
+
+metal1_width = 0.14.um
+metal1_space = 0.14.um
+wide_metal1 = 3.0.um
+wide_metal1_space = 0.28.um
+
+metal2_width = 0.14.um
+metal2_space = 0.14.um
+wide_metal2 = 3.0.um
+wide_metal2_space = 0.28.um
+
+
+via2_size = 0.2.um
+via2_space = 0.2.um
+large_metal2_over_via2 = 0.085.um
+small_metal2_over_via2 = 0.04.um
+metal3_over_via2 = 0.065.um
+
+metal3_width = 0.3.um
+metal3_space = 0.3.um
+wide_metal3 = 0.4.um
+wide_metal3_space = 0.4.um
+
+
+via3_size = 0.2.um
+via3_space = 0.2.um
+small_metal3_over_via3 = 0.065.um
+large_metal3_over_via3 = 0.09.um
+metal4_over_via3 = 0.065.um
+
+metal4_width = 0.3.um
+metal4_space = 0.3.um
+wide_metal4 = 0.4.um
+wide_metal4_space = 0.4.um
+
+
+via4_size = 0.8.um
+via4_space = 0.8.um
+metal4_over_via4 = 0.19.um
+metal5_over_via4 = 0.31.um
+
+metal5_width = 1.6.um
+metal5_space = 1.6.um
+wide_metal5 = 1.6.um
+wide_metal5_space = 1.6.um
+
+
+# layers processing
+########################
+info("Layers processing")
+M1_ref = 68
+V1_ref = 68
+M2_ref = 69
+V2_ref = 69
+M3_ref = 70
+V3_ref = 70
+M4_ref = 71
+V4_ref = 71
+M5_ref = 72
+
+def add_vias(via_org, mbot_org, mtop_org, via_add, mbot_add, mtop_add, via_size, via_space, large_metalbot_over_via, small_metalbot_over_via, large_metaltop_over_via, small_metaltop_over_via,
+ metalbot_width, metalbot_space, wide_metalbot, wide_metalbot_space, metaltop_width, metaltop_space, wide_metaltop, wide_metaltop_space, dx, dy, mbot_ref, mtop_ref, via_ref)
+
+  via = via_org + via_add
+  mtop = mtop_org + mtop_add
+  mbot = mbot_org + mbot_add
+  
+  mbot_wide = mbot.sized(-wide_metalbot/2).sized(wide_metalbot/2)
+  mtop_wide = mtop.sized(-wide_metaltop/2).sized(wide_metaltop/2)
+  dxa = dx.abs()
+  dya = dy.abs()
+
+ # consider only single via and exclude arrays of vias and previous double vias:
+  via_single = via &amp; (via.sized(via_space*1.1, octagon_limit).and(mbot).overlapping(via, 1, 1))
+
+  mbot_new = via_single.sized(dya*([small_metalbot_over_via , (metalbot_width-via_size)/2].max)+dxa*(large_metalbot_over_via+via_size+via_space+large_metalbot_over_via)/2 ,
+   dxa*([small_metalbot_over_via , (metalbot_width-via_size)/2].max)+dya*(large_metalbot_over_via+via_size+via_space+large_metalbot_over_via)/2).moved(dx*(via_size+via_space)/2, dy*(via_size+via_space)/2)
+  mbot_drc1 = mbot_new &amp; (mbot_new.sized(metalbot_space, octagon_limit).overlapping(mbot, 1, 1))
+  mbot_new.forget
+  mbot_drc2 = mbot_drc1 &amp; (mbot_drc1.sized(wide_metalbot_space, octagon_limit).not_interacting(mbot_wide))
+  mbot_drc1.forget
+  mbot_drc3 = mbot_drc2.not_interacting(mbot_drc2.separation(mbot, metalbot_space, euclidian).polygons.without_area(0))
+  mbot_drc2.forget
+  mbot_drc4 = mbot_drc3.not_interacting(mbot_drc3.separation(mbot_wide, wide_metalbot_space, euclidian).polygons.without_area(0))
+  mbot_drc3.forget
+  mbot_drc5 = mbot_drc4.not_interacting(mbot_drc4.sized(large_metalbot_over_via).overlapping(via, 2, 999))
+  mbot_drc4.forget
+
+  mtop_new = via_single.sized(dya*([small_metaltop_over_via , (metaltop_width-via_size)/2].max)+dxa*(large_metaltop_over_via+via_size+via_space+large_metaltop_over_via)/2 ,
+   dxa*([small_metaltop_over_via , (metaltop_width-via_size)/2].max)+dya*(large_metaltop_over_via+via_size+via_space+large_metaltop_over_via)/2).moved(dx*(via_size+via_space)/2, dy*(via_size+via_space)/2)
+  mtop_drc1 = mtop_new &amp; (mtop_new.sized(metaltop_space, octagon_limit).overlapping(mtop, 1, 1))
+  mtop_new.forget
+  mtop_drc2 = mtop_drc1 &amp; (mtop_drc1.sized(wide_metaltop_space, octagon_limit).not_interacting(mtop_wide))
+  mtop_drc1.forget
+  mtop_drc3 = mtop_drc2.not_interacting(mtop_drc2.separation(mtop, metaltop_space, euclidian).polygons.without_area(0))
+  mtop_drc2.forget
+  mtop_drc4 = mtop_drc3.not_interacting(mtop_drc3.separation(mtop_wide, wide_metaltop_space, euclidian).polygons.without_area(0))
+  mtop_drc3.forget
+  mtop_drc5 = mtop_drc4.not_interacting(mtop_drc4.sized(large_metaltop_over_via).overlapping(via, 2, 999))
+  mtop_drc4.forget
+
+  mbot_new = mbot_drc5.interacting(mtop_drc5)
+  mtop_new = mtop_drc5.interacting(mbot_drc5)
+  via_new = (via_single &amp; mtop_drc5.interacting(mbot_drc5)).moved(dx*(via_size+via_space), dy*(via_size+via_space))
+  mbot_drc5.forget
+  mtop_drc5.forget
+  
+  # Add new polygons
+  mbot_add.data += mbot_new.data
+  mtop_add.data += mtop_new.data
+  via_add.data += via_new.data
+  
+  mbot_new.forget
+  mtop_new.forget
+  via_new.forget
+  
+end
+
+M1_add = polygons
+V1_add = polygons
+M2_add = polygons
+V2_add = polygons
+M3_add = polygons
+V3_add = polygons
+M4_add = polygons
+V4_add = polygons
+M5_add = polygons
+
+# 1 - try to insert a via toward the top of the layout :
+add_vias(V1, M1, M2, V1_add, M1_add, M2_add, via_size, via_space, large_metal1_over_via, small_metal1_over_via, large_metal2_over_via, small_metal2_over_via,
+ metal1_width, metal1_space, wide_metal1, wide_metal1_space, metal2_width, metal2_space, wide_metal2, wide_metal2_space, 0, 1, M1_ref, M2_ref, V1_ref)
+
+# 2 - try to insert a via toward the bottom of the layout :
+add_vias(V1, M1, M2, V1_add, M1_add, M2_add, via_size, via_space, large_metal1_over_via, small_metal1_over_via, large_metal2_over_via, small_metal2_over_via,
+ metal1_width, metal1_space, wide_metal1, wide_metal1_space, metal2_width, metal2_space, wide_metal2, wide_metal2_space, 0, -1, M1_ref, M2_ref, V1_ref)
+
+# 3 - try to insert a via toward the right of the layout :
+add_vias(V1, M1, M2, V1_add, M1_add, M2_add, via_size, via_space, large_metal1_over_via, small_metal1_over_via, large_metal2_over_via, small_metal2_over_via,
+ metal1_width, metal1_space, wide_metal1, wide_metal1_space, metal2_width, metal2_space, wide_metal2, wide_metal2_space, 1, 0, M1_ref, M2_ref, V1_ref)
+
+# 4 - try to insert a via toward the left of the layout :
+add_vias(V1, M1, M2, V1_add, M1_add, M2_add, via_size, via_space, large_metal1_over_via, small_metal1_over_via, large_metal2_over_via, small_metal2_over_via,
+ metal1_width, metal1_space, wide_metal1, wide_metal1_space, metal2_width, metal2_space, wide_metal2, wide_metal2_space, -1, 0, M1_ref, M2_ref, V1_ref)
+
+
+# 1 - try to insert a via toward the top of the layout :
+add_vias(V2, M2, M3, V2_add, M2_add, M3_add, via2_size, via2_space, large_metal2_over_via2, small_metal2_over_via2, metal3_over_via2, metal3_over_via2,
+ metal2_width, metal2_space, wide_metal2, wide_metal2_space, metal3_width, metal3_space, wide_metal3, wide_metal3_space, 0, 1, M2_ref, M3_ref, V2_ref)
+
+# 2 - try to insert a via toward the bottom of the layout :
+add_vias(V2, M2, M3, V2_add, M2_add, M3_add, via2_size, via2_space, large_metal2_over_via2, small_metal2_over_via2, metal3_over_via2, metal3_over_via2,
+ metal2_width, metal2_space, wide_metal2, wide_metal2_space, metal3_width, metal3_space, wide_metal3, wide_metal3_space, 0, -1, M2_ref, M3_ref, V2_ref)
+
+# 3 - try to insert a via toward the right of the layout :
+add_vias(V2, M2, M3, V2_add, M2_add, M3_add, via2_size, via2_space, large_metal2_over_via2, small_metal2_over_via2, metal3_over_via2, metal3_over_via2,
+ metal2_width, metal2_space, wide_metal2, wide_metal2_space, metal3_width, metal3_space, wide_metal3, wide_metal3_space, 1, 0, M2_ref, M3_ref, V2_ref)
+
+# 4 - try to insert a via toward the left of the layout :
+add_vias(V2, M2, M3, V2_add, M2_add, M3_add, via2_size, via2_space, large_metal2_over_via2, small_metal2_over_via2, metal3_over_via2, metal3_over_via2,
+ metal2_width, metal2_space, wide_metal2, wide_metal2_space, metal3_width, metal3_space, wide_metal3, wide_metal3_space, -1, 0, M2_ref, M3_ref, V2_ref)
+
+
+# 1 - try to insert a via toward the top of the layout :
+add_vias(V3, M3, M4, V3_add, M3_add, M4_add, via3_size, via3_space, large_metal3_over_via3, small_metal3_over_via3, metal4_over_via3, metal4_over_via3,
+ metal3_width, metal3_space, wide_metal3, wide_metal3_space, metal4_width, metal4_space, wide_metal4, wide_metal4_space, 0, 1, M3_ref, M4_ref, V3_ref)
+
+# 2 - try to insert a via toward the bottom of the layout :
+add_vias(V3, M3, M4, V3_add, M3_add, M4_add, via3_size, via3_space, large_metal3_over_via3, small_metal3_over_via3, metal4_over_via3, metal4_over_via3,
+ metal3_width, metal3_space, wide_metal3, wide_metal3_space, metal4_width, metal4_space, wide_metal4, wide_metal4_space, 0, -1, M3_ref, M4_ref, V3_ref)
+
+# 3 - try to insert a via toward the right of the layout :
+add_vias(V3, M3, M4, V3_add, M3_add, M4_add, via3_size, via3_space, large_metal3_over_via3, small_metal3_over_via3, metal4_over_via3, metal4_over_via3,
+ metal3_width, metal3_space, wide_metal3, wide_metal3_space, metal4_width, metal4_space, wide_metal4, wide_metal4_space, 1, 0, M3_ref, M4_ref, V3_ref)
+
+# 4 - try to insert a via toward the left of the layout :
+add_vias(V3, M3, M4, V3_add, M3_add, M4_add, via3_size, via3_space, large_metal3_over_via3, small_metal3_over_via3, metal4_over_via3, metal4_over_via3,
+ metal3_width, metal3_space, wide_metal3, wide_metal3_space, metal4_width, metal4_space, wide_metal4, wide_metal4_space, -1, 0, M3_ref, M4_ref, V3_ref)
+
+
+# 1 - try to insert a via toward the top of the layout :
+add_vias(V4, M4, M5, V4_add, M4_add, M5_add, via4_size, via4_space, metal4_over_via4, metal4_over_via4, metal5_over_via4, metal5_over_via4,
+ metal4_width, metal4_space, wide_metal4, wide_metal4_space, metal5_width, metal5_space, wide_metal5, wide_metal5_space, 0, 1, M4_ref, M5_ref, V4_ref)
+
+# 2 - try to insert a via toward the bottom of the layout :
+add_vias(V4, M4, M5, V4_add, M4_add, M5_add, via4_size, via4_space, metal4_over_via4, metal4_over_via4, metal5_over_via4, metal5_over_via4,
+ metal4_width, metal4_space, wide_metal4, wide_metal4_space, metal5_width, metal5_space, wide_metal5, wide_metal5_space, 0, -1, M4_ref, M5_ref, V4_ref)
+
+# 3 - try to insert a via toward the right of the layout :
+add_vias(V4, M4, M5, V4_add, M4_add, M5_add, via4_size, via4_space, metal4_over_via4, metal4_over_via4, metal5_over_via4, metal5_over_via4,
+ metal4_width, metal4_space, wide_metal4, wide_metal4_space, metal5_width, metal5_space, wide_metal5, wide_metal5_space, 1, 0, M4_ref, M5_ref, V4_ref)
+
+# 4 - try to insert a via toward the left of the layout :
+add_vias(V4, M4, M5, V4_add, M4_add, M5_add, via4_size, via4_space, metal4_over_via4, metal4_over_via4, metal5_over_via4, metal5_over_via4,
+ metal4_width, metal4_space, wide_metal4, wide_metal4_space, metal5_width, metal5_space, wide_metal5, wide_metal5_space, -1, 0, M4_ref, M5_ref, V4_ref)
+
+
+# OPTIONAL: Produce a marker with differences for debugging
+# M1_add.output(1068, 20)
+# V1_add.output(1068, 44)
+# M2_add.output(1069, 20)
+
+# overwrite original layer
+M1.output(68,20)
+M1_addh = M1_add + (M1+M1_add).holes.with_area(0..0.2)
+M1_addh.output(68,20)
+V1.output(68,44)
+V1_add.output(68,44)
+M2.output(69,20)
+M2_addh = M2_add + (M2+M2_add).holes.with_area(0..0.2)
+M2_addh.output(69,20)
+
+V2.output(69,44)
+V2_add.output(69,44)
+M3.output(70,20)
+M3_addh = M3_add + (M3+M3_add).holes.with_area(0..0.2)
+M3_addh.output(70,20)
+
+V3.output(70,44)
+V3_add.output(70,44)
+M4.output(71,20)
+M4_addh = M4_add + (M4+M4_add).holes.with_area(0..0.2)
+M4_addh.output(71,20)
+
+V4.output(71,44)
+V4_add.output(71,44)
+M5.output(72,20)
+M5_add.output(72,20)
+
+
+time = Time.now
+hours = ((time - tstart)/3600).to_i
+minutes = ((time - tstart)/60 - hours * 60).to_i
+seconds = ((time - tstart) - (minutes * 60 + hours * 3600)).to_i
+$stdout.write "DRC finished at : #{time.hour}:#{time.min}:#{time.sec}  -  DoubleVia added after   #{hours} hrs. #{minutes} min. #{seconds} sec.\n"</text>
+</klayout-macro>

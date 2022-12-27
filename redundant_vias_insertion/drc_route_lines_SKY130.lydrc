@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description/>
+ <version/>
+ <category>drc</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <priority>0</priority>
+ <shortcut/>
+ <show-in-menu>true</show-in-menu>
+ <group-name>drc_scripts</group-name>
+ <menu-path>tools_menu.drc.end</menu-path>
+ <interpreter>dsl</interpreter>
+ <dsl-interpreter-name>drc-dsl-xml</dsl-interpreter-name>
+ <text>##################################
+# 180nm  Double VIA insertion
+##################################
+
+tstart = Time.now
+
+if $in_gds
+  if $topcell
+    source($in_gds,$topcell)
+  else
+    source($in_gds)
+  end
+end
+
+if $report_file
+  report($report_file)
+else
+  report("sky130 place&amp;route DRC runset", File.join(File.dirname(RBA::CellView::active.filename), "sky130_route_lines_drc.lydrc"))
+end
+
+# options
+########################
+
+# KLAYOUT setup
+########################
+# Use a tile size of 1mm
+tiles(1000.um)
+# Use a tile border of 10 micron:
+tile_borders(1.um)
+#no_borders
+
+# hierarchical
+deep
+
+# Use 4 CPU cores
+threads(4)
+verbose(true)
+
+# layers definitions
+########################
+info("Layers definitions")
+MC = input(67,44)
+M1 = input(68,20)
+V1 = input(68,44)
+M2 = input(69,20)
+V2 = input(69,44)
+M3 = input(70,20)
+V3 = input(70,44)
+M4 = input(71,20)
+V4 = input(71,44)
+M5 = input(72,20)
+
+
+# layers design rules
+########################
+via_size = 0.15.um
+via_space = 0.17.um
+large_metal1_over_via = 0.085.um
+small_metal1_over_via = 0.055.um
+large_metal2_over_via = 0.085.um
+small_metal2_over_via = 0.055.um
+
+metal1_width = 0.14.um
+metal1_space = 0.14.um
+wide1_metal1 = 3.0.um
+wide1_metal1_space = 0.28.um
+wide2_metal1 = 10.0.um
+wide2_metal1_space = 1.0.um
+
+metal2_width = 0.14.um
+metal2_space = 0.14.um
+wide1_metal2 = 3.0.um
+wide1_metal2_space = 0.28.um
+wide2_metal2 = 10.0.um
+wide2_metal2_space = 1.0.um
+
+# layers checks
+########################
+M1.not_interacting(MC).overlapping(M2, 1, 2).overlapping(V1, 2, 2).output("M1_to_M2", "Metal1 line should be in Metal2")
+(M1 &amp; (M1.not_interacting(MC).overlapping(M2, 1, 2).overlapping(V1, 2, 2).sized(metal1_space).overlapping(M1, 2, 2))).merged.output("M1_to_M2_drcOK", "Metal1 line can be in Metal2 and DRC OK")
+M2.overlapping(M1, 1, 2).overlapping(V1, 2, 2).not_interacting(V2).output("M2_to_M1", "Metal2 line should be in Metal1")
+(M2 &amp; (M2.overlapping(M1, 2, 2).overlapping(V1, 2, 2).not_interacting(V2).sized(metal2_space).overlapping(M1, 2, 2))).merged.output("M2_to_M1_drcOK", "Metal2 line can be in Metal1 and DRC OK")
+
+M2.overlapping(M3, 2, 2).not_interacting(V1).output("M2_to_M3", "Metal2 line should be in Metal3")
+M3.overlapping(M2, 2, 2).not_interacting(V3).output("M3_to_M2", "Metal3 line should be in Metal2")
+(M3 &amp; (M3.overlapping(M2, 2, 2).not_interacting(V3).sized(metal2_space).overlapping(M2, 2, 2))).merged.output("M3_to_M2_drcOK", "Metal3 line can be in Metal2 and DRC OK")
+
+M3.overlapping(M4, 2, 2).not_interacting(V2).output("M3_to_M4", "Metal3 line should be in Metal4")
+M4.overlapping(M3, 2, 2).not_interacting(V4).output("M4_to_M3", "Metal4 line should be in Metal3")
+(M4 &amp; (M4.overlapping(M3, 2, 2).not_interacting(V4).sized(metal2_space).overlapping(M3, 2, 2))).merged.output("M4_to_M3_drcOK", "Metal4 line can be in Metal3 and DRC OK")
+
+
+time = Time.now
+hours = ((time - tstart)/3600).to_i
+minutes = ((time - tstart)/60 - hours * 60).to_i
+seconds = ((time - tstart) - (minutes * 60 + hours * 3600)).to_i
+$stdout.write "DRC finished at : #{time.hour}:#{time.min}:#{time.sec}  -  DRC duration =  #{hours} hrs. #{minutes} min. #{seconds} sec.\n"</text>
+</klayout-macro>
