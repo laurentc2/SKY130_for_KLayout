@@ -503,8 +503,8 @@ via.not(m2).output("m2.via", "m2.via : m2 must enclose via")
 if backend_flow = AL
   m2.enclosing(via, 0.055, euclidian).output("m2.4", "m2.4 : min. m2 enclosure of via : 0.055um")
   via_edges_with_less_enclosure_m2 = m2.enclosing(via, 0.085, projection).second_edges
-  opposite7 = (via.edges - via_edges_with_less_enclosure_m2).width(0.14 + 1.dbu, projection).polygons
-  via.not_interacting(opposite7).output("m2.5", "m2.5 : min. m2 enclosure of via of 2 opposite edges : 0.085um")
+  opposite7 = via_edges_with_less_enclosure_m2.width(0.15 + 1.dbu, projection).polygons
+  via.interacting(opposite7).output("m2.5", "m2.5 : min. m2 enclosure of via of 2 opposite edges : 0.085um")
   # rule m2.pd.1, rule m2.pd.2a, rule m2.pd.2b not coded
 end
 if bakend_flow = CU
